@@ -1,0 +1,93 @@
+.container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ff8a65;
+}
+
+.containerWithin {
+  height: 92vh;
+  width: 500vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  margin-bottom: 2rem;
+  margin-top: -50px;
+}
+
+.logo {
+  width: 70px;
+  height: auto;
+  margin-bottom: 2rem;
+}
+
+.systemName {
+  font-size: 1.2rem;
+  font-family: "Cascadia Code", monospace;
+  font-weight: bold;
+  text-align: center;
+  margin: 0;
+  color: #333;
+}
+
+.form {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  border: 1px solid #374850;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  font-family: "Inria Sans";
+}
+
+.signin {
+  text-align: center;
+}
+
+.input {
+  margin-bottom: 1rem;
+  border-radius: 5px;
+  border: 1px solid #d9d9d9;
+  padding: 10px;
+  font-size: 1rem;
+}
+
+.button {
+  padding: 10px;
+  font-size: 1rem;
+  font-family: "Inria Sans";
+  background: #ff5252;
+  border-radius: 5px;
+  border: 1px solid #374850;
+  color: white;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: #d84343;
+}
+
+.p {
+  font-family: "Inria Sans";
+}
+
+a {
+  color: #ff5252;        
+  text-decoration: none; 
+}
+
+a:hover {
+  text-decoration: underline; 
+  color: #d84343;             
+}
