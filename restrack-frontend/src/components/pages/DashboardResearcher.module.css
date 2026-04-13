@@ -1,0 +1,25 @@
+.dashboard {
+  padding: 20px;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 300px 1fr; 
+  gap: 20px;
+  align-items: start; 
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%;
+}
+
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}

@@ -1,0 +1,98 @@
+.box {
+  background: transparent;
+  border: 1px solid #333;
+  padding: 1rem;
+  border-radius: 10px;
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between; /* 🔥 pushes text left + right */
+  align-items: center;
+  margin-bottom: 10px;
+  font-family: "Inria Sans", sans-serif;
+}
+
+.viewAll {
+  font-size: 0.85rem;
+  color: #ff5252;
+  cursor: pointer;
+}
+
+.card {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fff;
+}
+
+.viewAll:hover {
+  text-decoration: underline;
+}
+
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.eye {
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.meta {
+  margin-top: 5px;
+  font-size: 0.85rem;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  color: #aaa;
+}
+
+.status {
+  margin-top: 8px;
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.approved {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.pending {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.underReview {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.revision {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.bottomRow {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #555;
+}
