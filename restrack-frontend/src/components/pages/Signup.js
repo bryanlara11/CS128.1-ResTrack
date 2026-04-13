@@ -8,16 +8,22 @@ function Signup() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (firstName && lastName && email && password) {
-      navigate("/dashboard");
-    } else {
+    if (!firstName || !lastName || !email || !password) {
       alert("Please fill in all fields");
+      return;
     }
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+    alert("Signed up successfully!");
+    navigate("/login");
   };
 
   return (
@@ -76,9 +82,9 @@ function Signup() {
       <label>Confirm Password</label>
       <input
   type="password"
-  value={password}
+  value={confirmPassword}
   placeholder="Confirm Password"
-  onChange={(e) => setPassword(e.target.value)}
+  onChange={(e) => setConfirmPassword(e.target.value)}
   className={styles.input}
 />
     </div>
