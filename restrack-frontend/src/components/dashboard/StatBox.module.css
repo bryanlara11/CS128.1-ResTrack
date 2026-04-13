@@ -1,0 +1,37 @@
+.box {
+  background: #FF8A64;
+  border: 1px solid #333;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+  font-family: "Inria Sans", sans-serif;
+}
+
+.title {
+  margin-bottom: 15px;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.item {
+  background: #f9f9f9;
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.label {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.value {
+  font-weight: bold;
+}

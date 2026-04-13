@@ -1,0 +1,88 @@
+.navbar {
+  height: 60px;
+  background: #FFFEFE;
+  color: #1E1E1E;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* LEFT SIDE */
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-logo {
+  width: 40px;
+}
+
+.nav-title {
+  margin-right: 2rem;
+  font-family: "Cascadia Code", monospace;
+}
+
+/* LINKS */
+.nav-link {
+  color: #1E1E1E;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  text-decoration: underline;
+}
+
+.new-study-button {
+  background: #ff5252;
+  color: white;
+  border: 1px solid #333;
+  padding: 8px 14px;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: "Inria Sans";
+}
+
+.new-study-button:hover {
+  background: #d84343;
+}
+
+/* RIGHT SIDE */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.bi bi-bell nav-bell {
+  cursor: pointer;
+}
+
+
+/* PAGE CONTENT */
+.page-content {
+  padding: 2rem;
+  background: #f5f5f5;
+  min-height: calc(100vh - 60px);
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* aligns to right side */
+  line-height: 1.2;
+}
+
+.userName {
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.userRole {
+  font-size: 0.75rem;
+  color: #888;
+}

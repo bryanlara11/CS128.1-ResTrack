@@ -1,0 +1,56 @@
+.box {
+  background: transparent;
+  border: 1px solid #333;
+  padding: 1rem;
+  border-radius: 10px;
+  flex: 1;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.viewAll {
+  color: #ff5252;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+/* CARD LIST */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  padding: 10px;
+  border-radius: 8px;
+  background-color: transparent;
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+}
+
+/* STATUS COLORS */
+.approved {
+  background: #77A974;
+  border-left: 5px solid #257020;
+}
+
+.pending {
+  background: #FE8964;
+  border-left: 5px solid #EE6E44;
+}
+
+.review {
+  background: #FFEC8B;
+  border-left: 5px solid #FEDD36;
+}
+
+.revision {
+  background: #AFCDD8;
+  border-left: 5px solid #0085FF;
+}
