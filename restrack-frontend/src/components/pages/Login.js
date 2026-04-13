@@ -32,6 +32,8 @@ function Login() {
         } else {
           navigate("/dashboardresearcher");
         }
+      } else if (response.status === 403) {
+        alert(data.error || "Please contact admin to assign you a role.");
       } else {
         alert(data.error || "Login failed");
       }
