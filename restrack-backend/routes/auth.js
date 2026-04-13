@@ -12,7 +12,7 @@ router.post("/signup", async (req, res) => {
   try {
     // Check if user already exists
     const existingUser = await pool.query(
-      "SELECT id FROM users WHERE email = $1",
+      "SELECT user_id FROM users WHERE email = $1",
       [email]
     );
 
@@ -26,7 +26,7 @@ router.post("/signup", async (req, res) => {
 
     // Insert user
     const result = await pool.query(
-      "INSERT INTO users (first_name, last_name, email, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, first_name, last_name, email",
+      "INSERT INTO users (first_name, last_name, email, password) VALUES ($1, $2, $3, $4) RETURNING user_id, first_name, last_name, email",
       [firstName, lastName, email, passwordHash]
     );
 
@@ -34,7 +34,7 @@ router.post("/signup", async (req, res) => {
 
     // Generate JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email },
+      { id: user.user_id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
@@ -64,7 +64,7 @@ router.post("/login", async (req, res) => {
     const user = result.rows[0];
 
     // Compare password
-    const validPassword = await bcrypt.compare(password, user.password_hash);
+    const validPassword = await bcrypt.compare(password, user.password);
 
     if (!validPassword) {
       return res.status(401).json({ error: "Invalid email or password" });
@@ -72,7 +72,7 @@ router.post("/login", async (req, res) => {
 
     // Generate JWT
     const token = jwt.sign(
-      { id: user.id, email: user.email },
+      { id: user.user_id, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
@@ -80,7 +80,7 @@ router.post("/login", async (req, res) => {
     res.json({
       token,
       user: {
-        id: user.id,
+        id: user.user_id,
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
