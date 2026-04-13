@@ -11,12 +11,30 @@ function Signup() {
 
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (firstName && lastName && email && password) {
-      navigate("/dashboard");
-    } else {
+    if (!firstName || !lastName || !email || !password) {
       alert("Please fill in all fields");
+      return;
+    }
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        alert("Signed up and logged in successfully!");
+      } else {
+        alert(data.error || "Signup failed");
+      }
+    } catch (err) {
+      alert("Unable to connect to server");
     }
   };
 
