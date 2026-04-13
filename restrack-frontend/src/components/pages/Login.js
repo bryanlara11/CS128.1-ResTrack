@@ -22,7 +22,16 @@ function Login() {
       if (response.ok) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
-        alert("Logged in successfully!");
+
+        // Navigate based on role
+        const roleId = data.user.role_id;
+        if (roleId === 1) {
+          navigate("/dashboardadmin");
+        } else if (roleId === 2) {
+          navigate("/dashboardresearcher");
+        } else {
+          navigate("/dashboardresearcher");
+        }
       } else {
         alert(data.error || "Login failed");
       }
