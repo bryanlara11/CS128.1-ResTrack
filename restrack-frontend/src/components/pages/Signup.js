@@ -12,7 +12,7 @@ function Signup() {
 
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!firstName || !lastName || !email || !password) {
       alert("Please fill in all fields");
@@ -22,8 +22,24 @@ function Signup() {
       alert("Passwords do not match");
       return;
     }
-    alert("Signed up successfully!");
-    navigate("/login");
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ firstName, lastName, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Signed up successfully!");
+        navigate("/login");
+      } else {
+        alert(data.error || "Signup failed");
+      }
+    } catch (err) {
+      alert("Unable to connect to server");
+    }
   };
 
   return (
