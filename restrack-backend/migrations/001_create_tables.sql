@@ -35,10 +35,6 @@ CREATE TABLE IF NOT EXISTS statuses (
     status_name VARCHAR(100) NOT NULL UNIQUE
 );
 
--- ============================================
--- Users (alter existing table to match ERD)
--- ============================================
-
 -- Rename columns to match ERD
 ALTER TABLE users RENAME COLUMN id TO user_id;
 ALTER TABLE users RENAME COLUMN password_hash TO password;
