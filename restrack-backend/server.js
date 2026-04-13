@@ -7,7 +7,7 @@ const authRoutes = require("./routes/auth");
 const app = express();
 
 // Middleware
-app.use(cors({ origin: "http://localhost:3000" }));
+app.use(cors({ origin: ["http://localhost:3000", "http://localhost:3001"] }));
 app.use(express.json());
 
 // Routes

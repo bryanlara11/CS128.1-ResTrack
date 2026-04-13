@@ -25,9 +25,9 @@ CREATE TABLE IF NOT EXISTS hra_alignment (
 );
 
 CREATE TABLE IF NOT EXISTS hra_subcategory (
-    hra_subcat_id SERIAL PRIMARY KEY,
-    hra_id        INTEGER NOT NULL REFERENCES hra_alignment(hra_id),
-    hra_name      VARCHAR(200) NOT NULL
+    hra_subcat_id    SERIAL PRIMARY KEY,
+    hra_id           INTEGER NOT NULL REFERENCES hra_alignment(hra_id),
+    subcategory_name VARCHAR(200) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS statuses (
@@ -54,20 +54,21 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TR
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS research_studies (
-    research_id          SERIAL PRIMARY KEY,
-    title                VARCHAR(500) NOT NULL,
-    abstract_summary     TEXT,
-    department_id        INTEGER REFERENCES department(department_id),
-    hra_id               INTEGER REFERENCES hra_alignment(hra_id),
-    hra_subcat_id        INTEGER REFERENCES hra_subcategory(hra_subcat_id),
-    adviser_id           INTEGER REFERENCES users(user_id),
-    primary_author_id    INTEGER REFERENCES users(user_id),
-    is_required          BOOLEAN NOT NULL DEFAULT FALSE,
-    current_status_id    INTEGER REFERENCES statuses(status_id),
-    date_registered      DATE,
-    created_by           INTEGER REFERENCES users(user_id),
-    created_at           TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at           TIMESTAMP NOT NULL DEFAULT NOW()
+    research_id            SERIAL PRIMARY KEY,
+    hru_reg_no             VARCHAR(100),
+    title                  VARCHAR(500) NOT NULL,
+    abstract_summary       TEXT,
+    department_id          INTEGER REFERENCES department(department_id),
+    hra_id                 INTEGER REFERENCES hra_alignment(hra_id),
+    hra_subcat_id          INTEGER REFERENCES hra_subcategory(hra_subcat_id),
+    adviser_id             INTEGER REFERENCES users(user_id),
+    corresponding_author_id INTEGER REFERENCES users(user_id),
+    trb_required           BOOLEAN NOT NULL DEFAULT FALSE,
+    current_status_id      INTEGER REFERENCES statuses(status_id),
+    date_registered        DATE,
+    created_by             INTEGER REFERENCES users(user_id),
+    created_at             TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at             TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- ============================================
@@ -108,7 +109,7 @@ CREATE TABLE IF NOT EXISTS review_assignment (
     assigned_by       INTEGER REFERENCES users(user_id),
     date_assigned     TIMESTAMP NOT NULL DEFAULT NOW(),
     review_deadline   DATE,
-    est_days          INTEGER,
+    tat_days          INTEGER,
     date_completed    TIMESTAMP,
     assignment_status VARCHAR(50)
 );
@@ -123,20 +124,20 @@ CREATE TABLE IF NOT EXISTS review_feedback (
     research_id     INTEGER NOT NULL REFERENCES research_studies(research_id),
     reviewer_id     INTEGER REFERENCES users(user_id),
     feedback_status VARCHAR(50),
-    review          TEXT,
+    remarks         TEXT,
     recommendation  TEXT,
     feedback_date   TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- ============================================
--- TRO Reviews
+-- TRB Reviews
 -- ============================================
 
-CREATE TABLE IF NOT EXISTS tro_reviews (
-    tro_review_id SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS trb_reviews (
+    trb_review_id SERIAL PRIMARY KEY,
     research_id   INTEGER NOT NULL REFERENCES research_studies(research_id),
-    tro_user_id   INTEGER REFERENCES users(user_id),
-    tro_status    VARCHAR(50),
+    trb_user_id   INTEGER REFERENCES users(user_id),
+    trb_status    VARCHAR(50),
     remarks       TEXT,
     review_date   TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -160,7 +161,7 @@ CREATE TABLE IF NOT EXISTS revision_history (
 -- Notification
 -- ============================================
 
-CREATE TABLE IF NOT EXISTS notification (
+CREATE TABLE IF NOT EXISTS notifications (
     notification_id SERIAL PRIMARY KEY,
     research_id     INTEGER REFERENCES research_studies(research_id),
     user_id         INTEGER REFERENCES users(user_id),
@@ -178,11 +179,11 @@ CREATE TABLE IF NOT EXISTS bioinformatics (
     research_id INTEGER NOT NULL REFERENCES research_studies(research_id),
     study_type  VARCHAR(200),
     description TEXT,
-    channel_id  VARCHAR(100)
+    created_at  TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- ============================================
--- Bioinfo Samples
+-- BioInfo Samples
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS bioinfo_samples (
@@ -197,7 +198,7 @@ CREATE TABLE IF NOT EXISTS bioinfo_samples (
 );
 
 -- ============================================
--- Bioinfo Tools
+-- BioInfo Tools
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS bioinfo_tools (
@@ -212,7 +213,7 @@ CREATE TABLE IF NOT EXISTS bioinfo_tools (
 );
 
 -- ============================================
--- Bioinfo Datasets
+-- BioInfo Datasets
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS bioinfo_datasets (
@@ -224,13 +225,13 @@ CREATE TABLE IF NOT EXISTS bioinfo_datasets (
     file_format   VARCHAR(50),
     file_path     VARCHAR(500),
     file_size     BIGINT,
-    version_no    INTEGER NOT NULL DEFAULT 1,
+    accession_no  VARCHAR(100),
     upload_date   TIMESTAMP NOT NULL DEFAULT NOW(),
     is_raw_data   BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- ============================================
--- Bioinfo Results
+-- BioInfo Results
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS bioinfo_results (
@@ -243,7 +244,8 @@ CREATE TABLE IF NOT EXISTS bioinfo_results (
     software_tool_used VARCHAR(200),
     file_format        VARCHAR(50),
     accession_no       VARCHAR(100),
-    sequence_type      VARCHAR(100)
+    sequence_type      VARCHAR(100),
+    notes              TEXT
 );
 
 COMMIT;
