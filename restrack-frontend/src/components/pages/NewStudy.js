@@ -40,7 +40,7 @@ function NewStudy() {
 
       <div className={styles.topBar}>
         <button className={styles.backBtn} onClick={() => navigate("/studies")}>
-          <i className="bi bi-arrow-left"></i> Back
+          <i className="bi bi-arrow-left"></i>
         </button>
         <h2>Add New Research Study</h2>
       </div>
