@@ -13,7 +13,6 @@ function Notifications() {
     <div className={styles.box}>
       <div className={styles.header}>
         <h3>Notifications</h3>
-        <span className={styles.viewAll}>Show all</span>
       </div>
 
       <div className={styles.list}>
@@ -25,6 +24,7 @@ function Notifications() {
             {notif.text}
           </div>
         ))}
+        <span className={styles.viewAll}>View All Notifications</span>
       </div>
     </div>
   );
