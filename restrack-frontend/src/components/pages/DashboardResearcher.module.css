@@ -1,26 +1,30 @@
 .dashboard {
   padding: 20px;
   background: #f5f5f5;
-  margin: 0;
-  height: fit-content;
-}
-
-.columns {
-  display: grid;
-  grid-template-columns: 300px 1fr; 
-  gap: 20px;
-  align-items: start; 
-}
-
-.leftColumn {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  height: 100%;
+  height: fit-content;
+  align-items: stretch;
+  box-sizing: border-box;
 }
 
+.statusRow {
+  width: 100%;
+}
+
+.bottomRow {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.leftColumn,
 .rightColumn {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  height: 100%;
 }
