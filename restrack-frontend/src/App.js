@@ -5,6 +5,8 @@ import Signup from "./components/pages/Signup";
 import Layout from "./components/layout/Layout";
 import DashboardResearcher from "./components/pages/DashboardResearcher";
 import Studies from "./components/pages/Studies";
+import NewStudy from "./components/pages/NewStudy";
+import SpecificStudy from "./components/pages/SpecificStudy";
 
 function App() {
   return (
@@ -15,7 +17,9 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/" element={<Layout />}>
         <Route path="/dashboardresearcher" element={<DashboardResearcher />} />
-        <Route path="studies" element={<Studies />} />
+        <Route path="/studies" element={<Studies />} />
+        <Route path="/newstudy" element={<NewStudy />} />
+        <Route path="/study/:id" element={<SpecificStudy />} />
         </Route>
       </Routes>
     </BrowserRouter>

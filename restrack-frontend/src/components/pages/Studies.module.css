@@ -1,0 +1,147 @@
+.page {
+  padding: 20px;
+  font-family: "Inria Sans";
+  border-radius: 10px;
+  border: 1px solid #374850;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.heading {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #374850;
+  letter-spacing: 0.05em;
+}
+
+.newstudyButton {
+  background: #ff5252;
+  color: white;
+  border: 1px solid #333;
+  padding: 8px 14px;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: "Inria Sans";
+}
+
+.newstudyButton:hover {
+  background: #d84343;
+}
+
+.filterRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.searchWrapper {
+  position: relative;
+  flex: 1;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 9px 10px 9px 32px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-family: "Inria Sans";
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.statusDropdown {
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-family: "Inria Sans";
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.studyCard {
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.studyTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  flex: 1;
+  padding-right: 10px;
+}
+
+.eyeButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #374850;
+  font-size: 1.1rem;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.cardColors {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.dot {
+  color: #ccc;
+}
+
+.statusChip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: #888;
+  margin-top: 4px;
+}
+
+.empty {
+  text-align: center;
+  color: #aaa;
+  padding: 40px 0;
+}

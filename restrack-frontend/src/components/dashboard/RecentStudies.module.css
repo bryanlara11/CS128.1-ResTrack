@@ -8,7 +8,7 @@
 
 .header {
   display: flex;
-  justify-content: space-between; /* 🔥 pushes text left + right */
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
   font-family: "Inria Sans", sans-serif;
@@ -17,14 +17,19 @@
 .viewAll {
   font-size: 0.85rem;
   color: #ff5252;
+  text-decoration: underline;
+  margin-bottom: 40px;
+  border:none;
+  background: transparent;
   cursor: pointer;
 }
 
 .card {
-  border: 1px solid #eee;
+  border: 1px solid #333;
   border-radius: 10px;
   padding: 12px;
   background: #fff;
+  margin-top: 10px;
 }
 
 .viewAll:hover {
@@ -47,7 +52,7 @@
   font-size: 1.2rem;
 }
 
-.meta {
+.chips {
   margin-top: 5px;
   font-size: 0.85rem;
   color: #666;
@@ -67,26 +72,6 @@
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: bold;
-}
-
-.approved {
-  background: #e8f5e9;
-  color: #2e7d32;
-}
-
-.pending {
-  background: #fff3e0;
-  color: #ef6c00;
-}
-
-.underReview {
-  background: #e3f2fd;
-  color: #1565c0;
-}
-
-.revision {
-  background: #ffebee;
-  color: #c62828;
 }
 
 .bottomRow {

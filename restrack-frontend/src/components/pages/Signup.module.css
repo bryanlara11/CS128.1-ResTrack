@@ -33,7 +33,7 @@
 .systemName {
   font-size: 1.2rem;
   font-family: "Cascadia Code", monospace;
-  font-weight: bold; /* ensures bold style */
+  font-weight: bold; 
   text-align: center;
   margin-bottom: 2rem;
   color: #333;
@@ -55,8 +55,8 @@
 
 .formGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* 2 equal columns */
-  gap: 20px; /* space between columns */
+  grid-template-columns: 1fr 1fr; 
+  gap: 20px; 
   width: 100%;
 }
 

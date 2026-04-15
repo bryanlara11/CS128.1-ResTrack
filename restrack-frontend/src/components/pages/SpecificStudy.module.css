@@ -1,0 +1,103 @@
+.page {
+  padding: 20px;
+  font-family: "Inria Sans", sans-serif;
+  border-radius: 10px;
+  border: 1px solid #374850;
+  height: fit-content;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-left: 20px;
+  flex: 1;
+}
+
+.editButton {
+  background: #374850;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: "Inria Sans", sans-serif;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  margin-left: 20px;
+}
+
+.statusChip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.hrudept {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.dot {
+  color: #ccc;
+}
+
+.subBox {
+  border: 1px solid #374850;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;        
+  flex-direction: row;  
+}
+
+.tabSidebar {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #e5e5e5;
+  min-width: 160px;
+  padding: 10px 0;
+}
+
+.tab {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: "Inria Sans", sans-serif;
+  font-size: 0.88rem;
+  color: #666;
+  text-align: left;
+  border-left: 3px solid transparent;
+}
+
+.activeTab {
+  color: #374850;
+  border-left: 3px solid #4B4444;
+  font-weight: 600;
+  background: #D9D9D9;
+}
+
+.tabContent {
+  padding: 20px;
+  font-size: 0.9rem;
+  color: #444;
+  flex: 1;
+}
