@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Outlet, Link, useNavigate } from "react-router-dom";
 import "./Layout.css";
@@ -44,7 +43,6 @@ function Layout() {
               </div>
             )}
           </div>
-
         </div>
       </div>
 
