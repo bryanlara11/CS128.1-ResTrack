@@ -57,15 +57,6 @@ function NewStudy() {
             <textarea className={styles.textarea} value={abstract} onChange={(e) => setAbstract(e.target.value)}></textarea>
           </div>
 
-          <div className={styles.field}>
-            <label>Department *</label>
-            <input className={styles.input} value={department} onChange={(e) => setDepartment(e.target.value)} />
-          </div>
-
-          <div className={styles.field}>
-            <label>HRA Alignment *</label>
-            <input className={styles.input} value={hraAlignment} onChange={(e) => setHraAlignment(e.target.value)} />
-          </div>
         </div>
         <div className={styles.subBox}>
           <h3>AUTHORS & CO-AUTHORS</h3>
