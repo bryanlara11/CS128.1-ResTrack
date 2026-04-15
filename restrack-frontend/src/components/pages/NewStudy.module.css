@@ -162,3 +162,84 @@
   cursor: pointer;
   font-family: "Inria Sans";
 }
+
+.bioSectionTitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #374850;
+  letter-spacing: 0.05em;
+  margin: 10px 0 4px 0;
+  text-transform: uppercase;
+}
+
+.fileInput {
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  width: 100%;
+  font-family: "Inria Sans";
+  font-size: 0.85rem;
+}
+
+.fileName {
+  font-size: 0.8rem;
+  color: #555;
+  margin-top: 4px;
+}
+
+.uploadWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.uploadBox {
+  border: 2px dashed #374850;
+  border-radius: 10px;
+  padding: 20px;
+  cursor: pointer;
+  transition: 0.2s ease;
+  text-align: center;
+  background-color: #fafafa;
+}
+
+.uploadBox:hover {
+  background-color: #f1f5f9;
+  border-color: #1f2d34;
+}
+
+.uploadContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #374850;
+}
+
+.uploadContent i {
+  font-size: 1.8rem;
+}
+
+.uploadContent span {
+  font-weight: 600;
+}
+
+.uploadContent small {
+  font-size: 0.75rem;
+  color: #777;
+}
+
+.filePreview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #eef2f5;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #374850;
+}
