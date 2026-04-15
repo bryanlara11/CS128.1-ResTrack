@@ -8,12 +8,37 @@ function Login() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email === "admin@example.com" && password === "1234") {
-      navigate("/dashboard");
-    } else {
-      alert("Invalid credentials");
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        // Navigate based on role
+        const roleId = data.user.role_id;
+        if (roleId === 1) {
+          navigate("/dashboardadmin");
+        } else if (roleId === 2) {
+          navigate("/dashboardresearcher");
+        } else {
+          navigate("/dashboardresearcher");
+        }
+      } else if (response.status === 403) {
+        alert(data.error || "Please contact admin to assign you a role.");
+      } else {
+        alert(data.error || "Login failed");
+      }
+    } catch (err) {
+      alert("Unable to connect to server");
     }
   };
 

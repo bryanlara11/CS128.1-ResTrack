@@ -1,9 +1,23 @@
-import React from "react";
-import { Outlet, NavLink } from "react-router-dom";
+import React, { useState } from "react";
+import { Outlet, Link, useNavigate } from "react-router-dom";
 import "./Layout.css";
 import restrackLogo from "../../assets/restrack_logo.png";
 
 function Layout() {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const navigate = useNavigate();
+
+  const user = JSON.parse(localStorage.getItem("user") || '{}');
+  const displayName = user.first_name && user.last_name
+    ? `${user.first_name} ${user.last_name}`
+    : "User";
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
   return (
     <div>
       <div className="navbar">
@@ -20,12 +34,16 @@ function Layout() {
         </div>
 
         <div className="nav-right">
-          <NavLink to="/newstudy">
-            <button className="new-study-button">+ New Study</button></NavLink>
-          <div className="userInfo">
-          <span className="userName">James Wilson</span>
-          <span className="userRole">Researcher</span>
-        </div>
+            <button className="new-study-button">+ New Study</button>
+          <div className="userInfo" onClick={() => setShowDropdown(!showDropdown)}>
+            <span className="userName">{displayName}</span>
+            <span className="userRole">Researcher</span>
+            {showDropdown && (
+              <div className="user-dropdown">
+                <button className="logout-button" onClick={handleLogout}>Logout</button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
