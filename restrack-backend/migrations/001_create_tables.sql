@@ -1,13 +1,5 @@
--- ============================================
--- Health Research Tracking System
--- Database Migration: Create All Tables per ERD
--- ============================================
-
 BEGIN;
 
--- ============================================
--- Lookup / Reference Tables
--- ============================================
 
 CREATE TABLE IF NOT EXISTS roles (
     role_id   SERIAL PRIMARY KEY,
@@ -35,19 +27,14 @@ CREATE TABLE IF NOT EXISTS statuses (
     status_name VARCHAR(100) NOT NULL UNIQUE
 );
 
--- Rename columns to match ERD
 ALTER TABLE users RENAME COLUMN id TO user_id;
 ALTER TABLE users RENAME COLUMN password_hash TO password;
 ALTER TABLE users RENAME COLUMN created_at TO date_created;
 
--- Add new columns
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role_id INTEGER REFERENCES roles(role_id);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS department_id INTEGER REFERENCES department(department_id);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
 
--- ============================================
--- Research Studies
--- ============================================
 
 CREATE TABLE IF NOT EXISTS research_studies (
     research_id            SERIAL PRIMARY KEY,
@@ -67,10 +54,6 @@ CREATE TABLE IF NOT EXISTS research_studies (
     updated_at             TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- ============================================
--- Research Authors (many-to-many: Users <-> Research_Studies)
--- ============================================
-
 CREATE TABLE IF NOT EXISTS research_authors (
     research_author_id SERIAL PRIMARY KEY,
     research_id        INTEGER NOT NULL REFERENCES research_studies(research_id),
@@ -78,9 +61,7 @@ CREATE TABLE IF NOT EXISTS research_authors (
     author_type        VARCHAR(50)
 );
 
--- ============================================
--- Research Documents
--- ============================================
+
 
 CREATE TABLE IF NOT EXISTS research_documents (
     file_id     SERIAL PRIMARY KEY,
