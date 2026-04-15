@@ -79,9 +79,6 @@ function Studies() {
     <div className={styles.page}>
       <div className={styles.header}>
         <h2 className={styles.heading}>YOUR RESEARCH STUDIES</h2>
-        <button className={styles.newstudyButton} onClick={() => navigate("/newstudy")}>
-          + New Study
-        </button>
       </div>
 
       <div className={styles.filterRow}>
