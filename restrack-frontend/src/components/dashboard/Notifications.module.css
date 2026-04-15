@@ -13,12 +13,20 @@
 }
 
 .viewAll {
-  color: #ff5252;
+  color: #374850;
+  text-align: center;
+  text-decoration: underline;
+  border: 1px solid #374850;
+  border-radius: 5px;
+  height: 30px;
   cursor: pointer;
   font-size: 0.9rem;
+  margin-top: 5px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* CARD LIST */
 .list {
   display: flex;
   flex-direction: column;
@@ -34,7 +42,6 @@
   font-weight: 500;
 }
 
-/* STATUS COLORS */
 .approved {
   background: #77A974;
   border-left: 5px solid #257020;

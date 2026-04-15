@@ -54,7 +54,6 @@ function Signup() {
   <h2 className={styles.signup}>SIGN UP</h2>
 
   <div className={styles.formGrid}>
-    {/* LEFT COLUMN */}
     <div>
       <label>First Name</label>
       <input
@@ -84,7 +83,6 @@ function Signup() {
 />
     </div>
 
-    {/* RIGHT COLUMN */}
     <div>
       <label>Password</label>
       <input
