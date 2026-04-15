@@ -25,13 +25,11 @@ function Layout() {
         <div className="nav-left">
           <img src={restrackLogo} alt="logo" className="nav-logo" />
           <h2 className="nav-title">ResTrack</h2>
-          <NavLink to="/dashboardresearcher" className={({ isActive }) =>
+          <Link to="/dashboardresearcher" className={({ isActive }) =>
           isActive ? "navItem active" : "navItem"}>
-            <i className="bi bi-square-half"></i> 
-            Dashboard</NavLink>
-          <NavLink to="/studies" className={({ isActive }) =>
-          isActive ? "navItem active" : "navItem"}>
-            <i className="bi bi-list-ul"></i>Your Studies</NavLink>
+            Dashboard</Link>
+          <Link to="/studies" className={({ isActive }) =>
+          isActive ? "navItem active" : "navItem"}>Your Studies</Link>
         </div>
 
         <div className="nav-right">
