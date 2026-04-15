@@ -41,7 +41,7 @@ function StudyCard({ study, onExpand }) {
           <i class="bi bi-eye"></i>
         </button>
       </div>
-      <div className={styles.cardMeta}>
+      <div className={styles.cardColors}>
         <span className={styles.hru}>{study.hru}</span>
         <span className={styles.dot}>•</span>
         <span className={styles.department}>{study.department}</span>

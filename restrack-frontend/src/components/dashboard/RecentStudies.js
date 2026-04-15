@@ -56,7 +56,7 @@ function RecentStudies() {
               </span>
             </div>
 
-            <div className={styles.meta}>
+            <div className={styles.chips}>
               <span>{study.hru}</span>
               <span className={styles.dot}>•</span>
               <span>{study.department}</span>
@@ -66,10 +66,9 @@ function RecentStudies() {
             style={{ 
               color: STATUS_CLASS[study.status]?.color,
               backgroundColor: STATUS_CLASS[study.status]?.bg,
-            }}
->
-  {study.status}
-</div>
+            }}>
+            {study.status}
+          </div>
 
             <div className={styles.bottomRow}>
               <span>Authors: {study.authors}</span>

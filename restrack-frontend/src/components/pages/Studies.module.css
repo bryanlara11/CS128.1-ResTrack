@@ -112,7 +112,7 @@
   flex-shrink: 0;
 }
 
-.cardMeta {
+.cardColors {
   display: flex;
   align-items: center;
   gap: 6px;
