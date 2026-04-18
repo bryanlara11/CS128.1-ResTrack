@@ -148,17 +148,17 @@ const confirmSubmit = async () => {
                 <div className={styles.grid}>
                   <div className={styles.field}>
                     <label>Name *</label>
-                    <input className={styles.input} value={author.name} disabled={index === 0}
+                    <input className={styles.input} value={author.name}
                       onChange={(e) => updateAuthor(index, "name", e.target.value)} />
                   </div>
                   <div className={styles.field}>
                     <label>Email *</label>
-                    <input className={styles.input} value={author.email} disabled={index === 0}
+                    <input className={styles.input} value={author.email} 
                       onChange={(e) => updateAuthor(index, "email", e.target.value)} />
                   </div>
                   <div className={`${styles.field} ${styles.fullWidth}`}>
                     <label>Department (optional)</label>
-                    <input className={styles.input} value={author.department} disabled={index === 0}
+                    <input className={styles.input} value={author.department}
                       onChange={(e) => updateAuthor(index, "department", e.target.value)} />
                   </div>
                 </div>
