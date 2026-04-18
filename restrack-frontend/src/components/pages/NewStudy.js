@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styles from "./NewStudy.module.css";
 import { useNavigate } from "react-router-dom";
 
@@ -9,8 +9,51 @@ function NewStudy() {
   const [abstract, setAbstract] = useState("");
   const [studyFile, setStudyFile] = useState(null);
 
-  const CURRENT_USER = { name: "James Wilson", email: "james@email.com", department: "Cardiology" };
+  const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const CURRENT_USER = {
+    id: savedUser.id,
+    name:
+      savedUser.first_name && savedUser.last_name
+        ? `${savedUser.first_name} ${savedUser.last_name}`
+        : "You",
+    email: savedUser.email || "",
+    department: savedUser.department || "",
+  };
   const [authors, setAuthors] = useState([{ ...CURRENT_USER }]);
+
+  const [authorSuggestions, setAuthorSuggestions] = useState({});
+  const [activeSuggestIndex, setActiveSuggestIndex] = useState(null);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    (async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/users/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.user) return;
+
+        setAuthors((prev) => {
+          if (!prev?.length) return prev;
+          const next = [...prev];
+          next[0] = {
+            ...next[0],
+            id: data.user.id,
+            name: data.user.name,
+            email: data.user.email,
+            department: data.user.department,
+          };
+          return next;
+        });
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
 
   const [bioResults, setBioResults] = useState({ organismName: "", studyType: "", dataType: "", databaseSource: "", softwareTool: "", fileFormat: "", accessionNo: "", sequenceType: "", notes: "" });
   const [bioSamples, setBioSamples] = useState([{ sampleCode: "", sampleType: "", organismName: "", collectionDate: "", collectionSite: "", remarks: "" }]);
@@ -20,6 +63,49 @@ function NewStudy() {
   const addAuthor = () => setAuthors([...authors, { name: "", email: "", department: "" }]);
   const deleteAuthor = (i) => setAuthors(authors.filter((_, idx) => idx !== i));
   const updateAuthor = (i, field, value) => { const u = [...authors]; u[i][field] = value; setAuthors(u); };
+
+  const fetchSuggestions = (index, q) => {
+    const token = localStorage.getItem("token");
+    if (!token || !q || q.trim().length < 2) {
+      setAuthorSuggestions((prev) => ({ ...prev, [index]: [] }));
+      return;
+    }
+
+    window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/users/search?q=${encodeURIComponent(q.trim())}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await res.json();
+        setAuthorSuggestions((prev) => ({
+          ...prev,
+          [index]: Array.isArray(data.users) ? data.users : [],
+        }));
+      } catch {
+        setAuthorSuggestions((prev) => ({ ...prev, [index]: [] }));
+      }
+    }, 250);
+  };
+
+  const chooseSuggestion = (index, user) => {
+    const u = [...authors];
+    u[index] = {
+      ...u[index],
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      department: user.department,
+    };
+    setAuthors(u);
+    setAuthorSuggestions((prev) => ({ ...prev, [index]: [] }));
+    setActiveSuggestIndex(null);
+  };
+
+  useEffect(() => {
+    return () => window.clearTimeout(debounceRef.current);
+  }, []);
 
   const addSample = () => setBioSamples([...bioSamples, { sampleCode: "", sampleType: "", organismName: "", collectionDate: "", collectionSite: "", remarks: "" }]);
   const deleteSample = (i) => setBioSamples(bioSamples.filter((_, idx) => idx !== i));
@@ -148,8 +234,41 @@ const confirmSubmit = async () => {
                 <div className={styles.grid}>
                   <div className={styles.field}>
                     <label>Name *</label>
-                    <input className={styles.input} value={author.name}
-                      onChange={(e) => updateAuthor(index, "name", e.target.value)} />
+                    <input
+                      className={styles.input}
+                      value={author.name}
+                      onChange={(e) => {
+                        updateAuthor(index, "name", e.target.value);
+                        fetchSuggestions(index, e.target.value);
+                        setActiveSuggestIndex(index);
+                      }}
+                      onFocus={() => setActiveSuggestIndex(index)}
+                      onBlur={() => {
+                        // allow click selection before closing
+                        setTimeout(() => {
+                          setAuthorSuggestions((prev) => ({ ...prev, [index]: [] }));
+                          setActiveSuggestIndex(null);
+                        }, 150);
+                      }}
+                      autoComplete="off"
+                    />
+                    {activeSuggestIndex === index &&
+                      (authorSuggestions[index]?.length ?? 0) > 0 && (
+                        <div className={styles.suggestions}>
+                          {authorSuggestions[index].map((u) => (
+                            <div
+                              key={u.id}
+                              className={styles.suggestionItem}
+                              onMouseDown={() => chooseSuggestion(index, u)}
+                            >
+                              <div className={styles.suggestionName}>{u.name}</div>
+                              <div className={styles.suggestionMeta}>
+                                {u.email} {u.department ? `• ${u.department}` : ""}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                   </div>
                   <div className={styles.field}>
                     <label>Email *</label>
