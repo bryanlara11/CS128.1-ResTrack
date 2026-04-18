@@ -43,15 +43,38 @@ function StudyCard({ study }) {
 }
 
 function Studies() {
-  const navigate = useNavigate();
   const [studies, setStudies] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [activeSection, setActiveSection] = useState("Submitted");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("studies") || "[]");
-    setStudies(saved);
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      setError("Not logged in");
+      return;
+    }
+
+    (async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetch("http://localhost:5000/api/studies/my", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Failed to load studies");
+        setStudies(Array.isArray(data.studies) ? data.studies : []);
+      } catch (e) {
+        setError(e?.message || "Failed to load studies");
+        setStudies([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const filtered = studies.filter((s) => {
@@ -109,7 +132,11 @@ function Studies() {
       </div>
 
       <div className={styles.list}>
-        {filtered.length > 0 ? (
+        {loading ? (
+          <p className={styles.empty}>Loading…</p>
+        ) : error ? (
+          <p className={styles.empty}>{error}</p>
+        ) : filtered.length > 0 ? (
           filtered.map((study) => (
             <StudyCard key={study.id} study={study} />
           ))

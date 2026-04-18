@@ -5,46 +5,63 @@ async function seed() {
   const hash = await bcrypt.hash('password123', 10);
 
   await pool.query(`
-    INSERT INTO roles (role_id, role_name) VALUES
-      (1, 'Admin'),
-      (2, 'Researcher'),
-      (3, 'Reviewer'),
-      (4, 'TRB')
+    INSERT INTO roles (role_name) VALUES
+      ('Admin'),
+      ('Researcher'),
+      ('Reviewer'),
+      ('TRB')
     ON CONFLICT (role_name) DO NOTHING
   `);
+  await pool.query(
+    "SELECT setval(pg_get_serial_sequence('roles','role_id'), COALESCE((SELECT MAX(role_id) FROM roles), 1))"
+  );
 
   await pool.query(`
-    INSERT INTO department (department_id, department_name) VALUES
-      (1, 'College of Science'),
-      (2, 'College of Engineering'),
-      (3, 'College of Medicine')
+    INSERT INTO department (department_name) VALUES
+      ('College of Science'),
+      ('College of Engineering'),
+      ('College of Medicine')
     ON CONFLICT (department_name) DO NOTHING
   `);
+  await pool.query(
+    "SELECT setval(pg_get_serial_sequence('department','department_id'), COALESCE((SELECT MAX(department_id) FROM department), 1))"
+  );
 
   await pool.query(`
-    INSERT INTO statuses (status_id, status_name) VALUES
-      (1, 'Pending'),
-      (2, 'Under Review'),
-      (3, 'Approved'),
-      (4, 'For Revision')
+    INSERT INTO statuses (status_name) VALUES
+      ('Pending'),
+      ('Under Review'),
+      ('Approved'),
+      ('For Revision')
     ON CONFLICT (status_name) DO NOTHING
   `);
+  await pool.query(
+    "SELECT setval(pg_get_serial_sequence('statuses','status_id'), COALESCE((SELECT MAX(status_id) FROM statuses), 1))"
+  );
 
   // Insert users (upsert by email)
   const users = [
-    { first: 'Admin',      last: 'User',     email: 'admin@restrack.com',      role_id: 1, dept_id: 1 },
-    { first: 'Juan',       last: 'Dela Cruz',email: 'juan@restrack.com',       role_id: 2, dept_id: 1 },
-    { first: 'Maria',      last: 'Santos',   email: 'maria@restrack.com',      role_id: 2, dept_id: 2 },
-    { first: 'Carlos',     last: 'Reyes',    email: 'carlos@restrack.com',     role_id: 3, dept_id: 1 },
-    { first: 'Ana',        last: 'Lopez',    email: 'ana@restrack.com',        role_id: 4, dept_id: 3 },
+    { first: 'Admin',      last: 'User',     email: 'admin@restrack.com',      role: 'Admin',      dept: 'College of Science' },
+    { first: 'Juan',       last: 'Dela Cruz',email: 'juan@restrack.com',       role: 'Researcher', dept: 'College of Science' },
+    { first: 'Maria',      last: 'Santos',   email: 'maria@restrack.com',      role: 'Researcher', dept: 'College of Engineering' },
+    { first: 'Carlos',     last: 'Reyes',    email: 'carlos@restrack.com',     role: 'Reviewer',   dept: 'College of Science' },
+    { first: 'Ana',        last: 'Lopez',    email: 'ana@restrack.com',        role: 'TRB',        dept: 'College of Medicine' },
   ];
 
   for (const u of users) {
+    const roleRes = await pool.query("SELECT role_id FROM roles WHERE role_name = $1", [u.role]);
+    const deptRes = await pool.query(
+      "SELECT department_id FROM department WHERE department_name = $1",
+      [u.dept]
+    );
+    const roleId = roleRes.rows[0]?.role_id ?? null;
+    const deptId = deptRes.rows[0]?.department_id ?? null;
+
     await pool.query(`
       INSERT INTO users (first_name, last_name, email, password, role_id, department_id, is_active)
       VALUES ($1, $2, $3, $4, $5, $6, true)
       ON CONFLICT (email) DO UPDATE SET role_id = $5, department_id = $6
-    `, [u.first, u.last, u.email, hash, u.role_id, u.dept_id]);
+    `, [u.first, u.last, u.email, hash, roleId, deptId]);
   }
 
   // Get user IDs
@@ -77,6 +94,7 @@ async function seed() {
   // Link authors
   const allStudies = await pool.query("SELECT research_id, corresponding_author_id FROM research_studies ORDER BY research_id");
   for (const row of allStudies.rows) {
+    if (!row.corresponding_author_id) continue;
     await pool.query(`
       INSERT INTO research_authors (research_id, user_id, author_type) VALUES ($1, $2, 'Primary')
     `, [row.research_id, row.corresponding_author_id]);

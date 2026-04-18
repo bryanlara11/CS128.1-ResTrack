@@ -1,5 +1,21 @@
 BEGIN;
 
+-- ============================================
+-- Users (required by most tables/routes)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id      SERIAL PRIMARY KEY,
+    first_name   VARCHAR(150),
+    last_name    VARCHAR(150),
+    email        VARCHAR(255) NOT NULL UNIQUE,
+    password     TEXT NOT NULL,
+    date_created TIMESTAMP NOT NULL DEFAULT NOW(),
+    role_id      INTEGER,
+    department_id INTEGER,
+    is_active    BOOLEAN NOT NULL DEFAULT TRUE
+);
+
 
 CREATE TABLE IF NOT EXISTS roles (
     role_id   SERIAL PRIMARY KEY,
@@ -27,13 +43,19 @@ CREATE TABLE IF NOT EXISTS statuses (
     status_name VARCHAR(100) NOT NULL UNIQUE
 );
 
-ALTER TABLE users RENAME COLUMN id TO user_id;
-ALTER TABLE users RENAME COLUMN password_hash TO password;
-ALTER TABLE users RENAME COLUMN created_at TO date_created;
+-- Add FKs if this migration is applied onto an existing `users` table.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_role_fk') THEN
+        ALTER TABLE users
+            ADD CONSTRAINT users_role_fk FOREIGN KEY (role_id) REFERENCES roles(role_id);
+    END IF;
 
-ALTER TABLE users ADD COLUMN IF NOT EXISTS role_id INTEGER REFERENCES roles(role_id);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS department_id INTEGER REFERENCES department(department_id);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_department_fk') THEN
+        ALTER TABLE users
+            ADD CONSTRAINT users_department_fk FOREIGN KEY (department_id) REFERENCES department(department_id);
+    END IF;
+END $$;
 
 
 CREATE TABLE IF NOT EXISTS research_studies (
@@ -53,6 +75,45 @@ CREATE TABLE IF NOT EXISTS research_studies (
     created_at             TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at             TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- If `research_studies` already existed, ensure newer columns exist.
+ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS title VARCHAR(500);
+ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS hru_reg_no VARCHAR(100);
+ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS abstract_summary TEXT;
+ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS department_id INTEGER;
+ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS current_status_id INTEGER;
+ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS corresponding_author_id INTEGER;
+ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS adviser_id INTEGER;
+ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS created_by INTEGER;
+ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS date_registered DATE;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'research_studies_department_fk') THEN
+        ALTER TABLE research_studies
+            ADD CONSTRAINT research_studies_department_fk FOREIGN KEY (department_id) REFERENCES department(department_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'research_studies_status_fk') THEN
+        ALTER TABLE research_studies
+            ADD CONSTRAINT research_studies_status_fk FOREIGN KEY (current_status_id) REFERENCES statuses(status_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'research_studies_corresponding_author_fk') THEN
+        ALTER TABLE research_studies
+            ADD CONSTRAINT research_studies_corresponding_author_fk FOREIGN KEY (corresponding_author_id) REFERENCES users(user_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'research_studies_adviser_fk') THEN
+        ALTER TABLE research_studies
+            ADD CONSTRAINT research_studies_adviser_fk FOREIGN KEY (adviser_id) REFERENCES users(user_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'research_studies_created_by_fk') THEN
+        ALTER TABLE research_studies
+            ADD CONSTRAINT research_studies_created_by_fk FOREIGN KEY (created_by) REFERENCES users(user_id);
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS research_authors (
     research_author_id SERIAL PRIMARY KEY,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styles from "./SpecificStudy.module.css";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 const TABS = ["Overview", "Authors", "Documents", "Reviews", "History", "Bioinformatics"];
 
@@ -228,26 +228,52 @@ function BioinformaticsContent({ study }) {
 
 function SpecificStudy() {
   const [activeTab, setActiveTab] = useState("Overview");
-  const navigate = useNavigate();
   const { id } = useParams();
-  const [studies, setStudies] = useState([]);
+  const [study, setStudy] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("studies") || "[]");
-    setStudies(saved);
-  }, []);
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      setError("Not logged in");
+      return;
+    }
 
-  const studyspecific = studies.find((s) => s.id === Number(id));
-  const status = studyspecific ? STATUS_CONFIG[studyspecific.status] : null;
+    (async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Failed to load study");
+        setStudy(data.study || null);
+      } catch (e) {
+        setError(e?.message || "Failed to load study");
+        setStudy(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  const status = study ? STATUS_CONFIG[study.status] : null;
 
   return (
     <div className={styles.page}>
-      {!studyspecific ? (
+      {loading ? (
+        <p>Loading…</p>
+      ) : error ? (
+        <p>{error}</p>
+      ) : !study ? (
         <p>Study not found.</p>
       ) : (
         <>
           <div className={styles.header}>
-            <h1 className={styles.title}>{studyspecific.title}</h1>
+            <h1 className={styles.title}>{study.title}</h1>
             <button className={styles.editButton}>
               <i className="bi bi-pencil"></i> Edit Study
             </button>
@@ -258,11 +284,11 @@ function SpecificStudy() {
               className={styles.statusChip}
               style={{ color: status?.color, backgroundColor: status?.bg }}
             >
-              {studyspecific.status}
+              {study.status}
             </span>
-            <span className={styles.hrudept}>{studyspecific.hru}</span>
+            <span className={styles.hrudept}>{study.hru}</span>
             <span className={styles.dot}>•</span>
-            <span className={styles.hrudept}>{studyspecific.department}</span>
+            <span className={styles.hrudept}>{study.department}</span>
           </div>
 
           <div className={styles.subBox}>
@@ -279,12 +305,12 @@ function SpecificStudy() {
             </div>
 
             <div className={styles.tabContent}>
-              {activeTab === "Overview" && <OverviewContent study={studyspecific} />}
-              {activeTab === "Authors" && <AuthorsContent study={studyspecific} />}
-              {activeTab === "Documents" && <DocumentsContent study={studyspecific} />}
-              {activeTab === "Reviews" && <ReviewsContent study={studyspecific} />}
-              {activeTab === "History" && <HistoryContent study={studyspecific} />}
-              {activeTab === "Bioinformatics" && <BioinformaticsContent study={studyspecific} />}
+              {activeTab === "Overview" && <OverviewContent study={study} />}
+              {activeTab === "Authors" && <AuthorsContent study={study} />}
+              {activeTab === "Documents" && <DocumentsContent study={study} />}
+              {activeTab === "Reviews" && <ReviewsContent study={study} />}
+              {activeTab === "History" && <HistoryContent study={study} />}
+              {activeTab === "Bioinformatics" && <BioinformaticsContent study={study} />}
             </div>
           </div>
         </>
