@@ -145,3 +145,31 @@
   color: #aaa;
   padding: 40px 0;
 }
+
+.sectionToggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  background: #f0f0f0;
+  padding: 4px;
+  border-radius: 8px;
+  width: fit-content;
+}
+
+.toggleButton {
+  padding: 6px 20px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font-family: "Inria Sans";
+  font-size: 0.88rem;
+  color: #555;
+}
+
+.toggleActive {
+  background: white;
+  color: #374850;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}

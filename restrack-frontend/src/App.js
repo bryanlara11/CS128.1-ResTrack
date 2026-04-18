@@ -19,7 +19,7 @@ function App() {
         <Route path="/dashboardresearcher" element={<DashboardResearcher />} />
         <Route path="/studies" element={<Studies />} />
         <Route path="/newstudy" element={<NewStudy />} />
-        <Route path="/study/:id" element={<SpecificStudy />} />
+        <Route path="/studies/:id" element={<SpecificStudy />} />
         </Route>
       </Routes>
     </BrowserRouter>

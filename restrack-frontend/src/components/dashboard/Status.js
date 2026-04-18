@@ -9,7 +9,6 @@ function Status() {
   return (
     <div className={styles.grid}>
 
-      {/* APPROVED */}
       <div className={`${styles.card} ${styles.approved}`}>
         <div className={styles.cardContent}>
           <div className={styles.text}>
@@ -20,7 +19,6 @@ function Status() {
         </div>
       </div>
 
-      {/* PENDING */}
       <div className={`${styles.card} ${styles.pending}`}>
         <div className={styles.cardContent}>
           <div className={styles.text}>
@@ -31,7 +29,6 @@ function Status() {
         </div>
       </div>
 
-      {/* UNDER REVIEW */}
       <div className={`${styles.card} ${styles.review}`}>
         <div className={styles.cardContent}>
           <div className={styles.text}>
@@ -42,7 +39,6 @@ function Status() {
         </div>
       </div>
 
-      {/* FOR REVISION */}
       <div className={`${styles.card} ${styles.revision}`}>
         <div className={styles.cardContent}>
           <div className={styles.text}>

@@ -8,7 +8,9 @@ function NewStudy() {
   const [title, setTitle] = useState("");
   const [abstract, setAbstract] = useState("");
   const [studyFile, setStudyFile] = useState(null);
-  const [authors, setAuthors] = useState([{ name: "", email: "", department: "" }]);
+
+  const CURRENT_USER = { name: "James Wilson", email: "james@email.com", department: "Cardiology" };
+  const [authors, setAuthors] = useState([{ ...CURRENT_USER }]);
 
   const [bioResults, setBioResults] = useState({ organismName: "", studyType: "", dataType: "", databaseSource: "", softwareTool: "", fileFormat: "", accessionNo: "", sequenceType: "", notes: "" });
   const [bioSamples, setBioSamples] = useState([{ sampleCode: "", sampleType: "", organismName: "", collectionDate: "", collectionSite: "", remarks: "" }]);
@@ -31,40 +33,68 @@ function NewStudy() {
   const deleteTool = (i) => setBioTools(bioTools.filter((_, idx) => idx !== i));
   const updateTool = (i, field, value) => { const u = [...bioTools]; u[i][field] = value; setBioTools(u); };
 
-  const handleSubmit = async () => {
-        const formData = new FormData();
+  const [showConfirm, setShowConfirm] = useState(false);
 
-        formData.append("title", title);
-        formData.append("abstract", abstract);
-        formData.append("authors", JSON.stringify(authors));
+  const handleSubmit = () => {
+  if (!title.trim()) { alert("Research title is required."); return; }
+  if (!abstract.trim()) { alert("Abstract is required."); return; }
+  if (!studyFile) { alert("Please upload a research document."); return; }
+  if (authors.some((a) => !a.name.trim() || !a.email.trim())) { alert("All authors must have a name and email."); return; }
 
-        if (studyFile) {
-          formData.append("studyFile", studyFile);
-        }
+  setShowConfirm(true);
+};
 
-        formData.append("bioResults", JSON.stringify(bioResults));
-        formData.append("bioSamples", JSON.stringify(bioSamples));
-        formData.append("bioTools", JSON.stringify(bioTools));
+const confirmSubmit = async () => {
+  setShowConfirm(false);
 
-        try {
-          const res = await fetch("http://localhost:5000/api/studies", {
-            method: "POST",
-            body: formData
-          });
+  const newStudy = {
+    id: Date.now(),
+    title,
+    abstract,
+    authorList: authors,
+    status: "Under Review",
+    hru: `HRU-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`,
+    department: authors[0]?.department || "—",
+    submittedBy: authors[0]?.name || "—",
+    dateCreated: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    date: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    bioinformatics: hasBio ? { results: bioResults, samples: bioSamples, datasets: bioDatasets, tools: bioTools } : null,
+    documents: studyFile ? [{ name: studyFile.name, uploadedAt: new Date().toLocaleDateString() }] : [],
+    reviews: [],
+    history: [{ action: "Study submitted", by: authors[0]?.name || "—", date: new Date().toLocaleDateString() }],
+  };
 
-          const data = await res.json();
-          console.log(data);
+  const existing = JSON.parse(localStorage.getItem("studies") || "[]");
+  localStorage.setItem("studies", JSON.stringify([...existing, newStudy]));
 
-          navigate("/studies");
-        } catch (err) {
-          console.error(err);
-        }
-      };
+  navigate("/studies");
+};
 
   const handleDraft = () => {
-    console.log({ title, abstract, authors, bioResults, bioSamples, bioDatasets, bioTools });
-    navigate("/studies");
+  if (!title.trim()) { alert("Please enter a title before saving as draft."); return; }
+
+  const draftStudy = {
+    id: Date.now(),
+    title,
+    abstract,
+    authorList: authors,
+    status: "Draft",
+    hru: `HRU-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`,
+    department: authors[0]?.department || "—",
+    submittedBy: authors[0]?.name || "—",
+    dateCreated: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    date: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    bioinformatics: hasBio ? { results: bioResults, samples: bioSamples, datasets: bioDatasets, tools: bioTools } : null,
+    documents: studyFile ? [{ name: studyFile.name, uploadedAt: new Date().toLocaleDateString() }] : [],
+    reviews: [],
+    history: [{ action: "Draft saved", by: authors[0]?.name || "—", date: new Date().toLocaleDateString() }],
   };
+
+  const existing = JSON.parse(localStorage.getItem("studies") || "[]");
+  localStorage.setItem("studies", JSON.stringify([...existing, draftStudy]));
+
+  navigate("/studies");
+};
 
   return (
     <div className={styles.page}>
@@ -111,23 +141,32 @@ function NewStudy() {
           <h3>AUTHORS & CO-AUTHORS</h3>
           {authors.map((author, index) => (
             <div key={index} className={styles.authorCard}>
-              <i className={`bi bi-trash ${styles.trashIcon}`} onClick={() => deleteAuthor(index)}></i>
-              <div className={styles.grid}>
-                <div className={styles.field}>
-                  <label>Name *</label>
-                  <input className={styles.input} value={author.name} onChange={(e) => updateAuthor(index, "name", e.target.value)} />
+                {index !== 0 && (
+                  <i className={`bi bi-trash ${styles.trashIcon}`} onClick={() => deleteAuthor(index)}></i>
+                )}
+
+                <div className={styles.grid}>
+                  <div className={styles.field}>
+                    <label>Name *</label>
+                    <input className={styles.input} value={author.name} disabled={index === 0}
+                      onChange={(e) => updateAuthor(index, "name", e.target.value)} />
+                  </div>
+                  <div className={styles.field}>
+                    <label>Email *</label>
+                    <input className={styles.input} value={author.email} disabled={index === 0}
+                      onChange={(e) => updateAuthor(index, "email", e.target.value)} />
+                  </div>
+                  <div className={`${styles.field} ${styles.fullWidth}`}>
+                    <label>Department (optional)</label>
+                    <input className={styles.input} value={author.department} disabled={index === 0}
+                      onChange={(e) => updateAuthor(index, "department", e.target.value)} />
+                  </div>
                 </div>
-                <div className={styles.field}>
-                  <label>Email *</label>
-                  <input className={styles.input} value={author.email} onChange={(e) => updateAuthor(index, "email", e.target.value)} />
-                </div>
-                <div className={`${styles.field} ${styles.fullWidth}`}>
-                  <label>Department (optional)</label>
-                  <input className={styles.input} value={author.department} onChange={(e) => updateAuthor(index, "department", e.target.value)} />
-                </div>
+
+                {index === 0 && <span className={styles.youBadge}>You</span>}
+
               </div>
-            </div>
-          ))}
+            ))}
           <button className={styles.addAuthor} onClick={addAuthor}>+ Add Co-author</button>
         </div>
 
@@ -231,6 +270,19 @@ function NewStudy() {
         <button className={styles.draft} onClick={handleDraft}>Save as Draft</button>
         <button className={styles.submit} onClick={handleSubmit}>Submit for Review</button>
       </div>
+
+      {showConfirm && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <h3>Submit for Review?</h3>
+            <p>Once submitted, the study will be sent for review. Are you sure?</p>
+            <div className={styles.modalActions}>
+              <button className={styles.cancelBtn} onClick={() => setShowConfirm(false)}>Cancel</button>
+              <button className={styles.confirmBtn} onClick={confirmSubmit}>Yes, Submit</button>
+            </div>
+          </div>
+        </div>
+)}
 
     </div>
   );
