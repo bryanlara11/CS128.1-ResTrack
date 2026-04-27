@@ -15,16 +15,5 @@
 }
 
 .bottomRow {
-  display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: 20px;
-  align-items: start;
-}
-
-.leftColumn,
-.rightColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  height: 100%;
+  width: 100%;
 }

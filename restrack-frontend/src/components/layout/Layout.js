@@ -5,12 +5,15 @@ import restrackLogo from "../../assets/restrack_logo.png";
 
 function Layout() {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showNotifs, setShowNotifs] = useState(false);
   const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem("user") || '{}');
   const displayName = user.first_name && user.last_name
     ? `${user.first_name} ${user.last_name}`
     : "User";
+
+  const notifications = [];
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -36,6 +39,29 @@ function Layout() {
 
         <div className="nav-right">
             <button className="new-study-button" onClick={() => navigate("/newstudy")}>+ New Study</button>
+            
+            <div className="notifWrapper">
+                <div className="notifBell" onClick={() => setShowNotifs(!showNotifs)}>
+                  <i className="bi bi-bell"></i>
+                  {notifications.length > 0 && (
+                    <span className="notifBadge">{notifications.length}</span>
+                  )}
+                </div>
+
+                {showNotifs && (
+                  <div className="notifDropdown">
+                    <h4 className="notifTitle">Notifications</h4>
+                    {notifications.length > 0 ? notifications.map((n) => (
+                      <div key={n.id} className="notifItem">
+                        <p className="notifMessage">{n.message}</p>
+                        <span className="notifDate">{n.date}</span>
+                      </div>
+                    )) : (
+                      <p className="notifEmpty">No notifications.</p>
+                    )}
+                  </div>
+                )}
+              </div>
           <div className="userInfo" onClick={() => setShowDropdown(!showDropdown)}>
             <span className="userName">{displayName}</span>
             <span className="userRole">Researcher</span>
