@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import styles from "./Studies.module.css";
 
 const STATUS_CONFIG = {
-  "Under Review": { color: "#374850", bg: "#fef3c7" },
-  "Approved":     { color: "#374850", bg: "#d1fae5" },
-  "Pending":      { color: "#374850", bg: "#fee2e2" },
-  "For Revision": { color: "#374850", bg: "#f3f4f6" },
+  "Approved":               { color: "#10b981", bg: "#d1fae5" },
+  "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
+  "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
+  "For Modification":       { color: "#f97316", bg: "#ffedd5" },
+  "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
 };
 
 function StudyCard({ study }) {

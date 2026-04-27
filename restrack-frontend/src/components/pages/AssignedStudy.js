@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import styles from "./SpecificStudy.module.css";
+import styles from "./AssignedStudy.module.css";
 import { useNavigate, useParams } from "react-router-dom";
 
 const TABS = ["Overview", "Authors", "Documents", "Reviews", "History", "Bioinformatics"];
@@ -66,25 +66,11 @@ function AuthorsContent({ study }) {
 }
 
 function DocumentsContent({ study }) {
-  const [docs, setDocs] = useState(study.documents ? [...study.documents] : []);
-
-  const handleUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setDocs([...docs, { name: file.name, uploadedAt: new Date().toLocaleDateString(), file }]);
-  };
-
   return (
     <div className={styles.tabSection}>
-      <div className={styles.docHeader}>
-        <h4 className={styles.tabSectionTitle}>Documents</h4>
-        <label className={styles.uploadBtn}>
-          <i className="bi bi-upload"></i> Upload Document
-          <input type="file" hidden onChange={handleUpload} />
-        </label>
-      </div>
+      <h4 className={styles.tabSectionTitle}>Documents</h4>
       <div className={styles.docList}>
-        {docs.length > 0 ? docs.map((doc, i) => (
+        {study.documents?.length > 0 ? study.documents.map((doc, i) => (
           <div key={i} className={styles.docItem}>
             <i className="bi bi-file-earmark-text"></i>
             <div className={styles.docInfo}>
@@ -98,17 +84,29 @@ function DocumentsContent({ study }) {
   );
 }
 
-function ReviewsContent({ study }) {
+function ReviewsContent({ study, onSubmitReview }) {
   const STATUS_COLORS = {
-    "Approved":     { color: "#10b981", bg: "#d1fae5" },
-    "Rejected":     { color: "#ef4444", bg: "#fee2e2" },
-    "For Revision": { color: "#f59e0b", bg: "#fef3c7" },
-    "Pending":      { color: "#6b7280", bg: "#f3f4f6" },
+    "Approved":               { color: "#10b981", bg: "#d1fae5" },
+    "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
+    "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
+    "For Modification":       { color: "#f97316", bg: "#ffedd5" },
+    "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
+  };
+
+  const [reviewStatus, setReviewStatus] = useState("Pending");
+  const [reviewComment, setReviewComment] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = () => {
+    if (!reviewComment.trim()) { alert("Please provide feedback comments."); return; }
+    onSubmitReview({ status: reviewStatus, feedback: reviewComment });
+    setSubmitted(true);
   };
 
   return (
     <div className={styles.tabSection}>
-      <h4 className={styles.tabSectionTitle}>Reviewer Feedback</h4>
+
+      <h4 className={styles.tabSectionTitle}>Past Reviews</h4>
       <div className={styles.reviewList}>
         {study.reviews?.length > 0 ? study.reviews.map((review, i) => {
           const s = STATUS_COLORS[review.status] || STATUS_COLORS["Pending"];
@@ -126,6 +124,41 @@ function ReviewsContent({ study }) {
           );
         }) : <p className={styles.empty}>No reviews yet.</p>}
       </div>
+
+      <h4 className={styles.tabSectionTitle}>Submit Your Review</h4>
+      {submitted ? (
+        <div className={styles.successMsg}>
+          <i className="bi bi-check-circle"></i> Review submitted successfully.
+        </div>
+      ) : (
+        <div className={styles.reviewForm}>
+          <div className={styles.reviewFormField}>
+            <label className={styles.reviewFormLabel}>Status</label>
+            <select
+              className={styles.reviewSelect}
+              value={reviewStatus}
+              onChange={(e) => setReviewStatus(e.target.value)}
+            >
+              <option value="Approved">Approved</option>
+              <option value="For Revision">For Revision</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+          <div className={styles.reviewFormField}>
+            <label className={styles.reviewFormLabel}>Comments</label>
+            <textarea
+              className={styles.reviewTextarea}
+              placeholder="Write your feedback here..."
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+            />
+          </div>
+          <button className={styles.reviewSubmitBtn} onClick={handleSubmit}>
+            Submit Review
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -133,7 +166,7 @@ function ReviewsContent({ study }) {
 function HistoryContent({ study }) {
   return (
     <div className={styles.tabSection}>
-      <h4 className={styles.tabSectionTitle}>Revision History</h4>
+      <h4 className={styles.tabSectionTitle}>Review History</h4>
       <div className={styles.timeline}>
         {study.history?.length > 0 ? study.history.map((entry, i) => (
           <div key={i} className={styles.timelineItem}>
@@ -144,7 +177,7 @@ function HistoryContent({ study }) {
               <span className={styles.timelineMeta}>{entry.by} · {entry.date}</span>
             </div>
           </div>
-        )) : <p className={styles.empty}>No history yet.</p>}
+        )) : <p className={styles.empty}>No review history yet.</p>}
       </div>
     </div>
   );
@@ -182,12 +215,6 @@ function BioinformaticsContent({ study }) {
                 <p className={styles.overviewValue}>{value || "—"}</p>
               </div>
             ))}
-            {s.remarks && (
-              <div className={`${styles.overviewField} ${styles.fullWidth}`}>
-                <span className={styles.overviewLabel}>Remarks</span>
-                <p className={styles.overviewValue}>{s.remarks}</p>
-              </div>
-            )}
           </div>
         </div>
       )) : <p className={styles.empty}>No samples.</p>}
@@ -227,57 +254,57 @@ function BioinformaticsContent({ study }) {
   );
 }
 
-function SpecificStudy() {
+function AssignedStudy() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Overview");
   const { id } = useParams();
-  const [study, setStudy] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [studies, setStudies] = useState([]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setLoading(false);
-      setError("Not logged in");
-      return;
-    }
+    const saved = JSON.parse(localStorage.getItem("studies") || "[]");
+    setStudies(saved);
+  }, []);
 
-    (async () => {
-      try {
-        setLoading(true);
-        setError("");
-        const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Failed to load study");
-        setStudy(data.study || null);
-      } catch (e) {
-        setError(e?.message || "Failed to load study");
-        setStudy(null);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [id]);
-
+  const study = studies.find((s) => s.id === Number(id));
   const status = study ? STATUS_CONFIG[study.status] : null;
+
+  const handleSubmitReview = (review) => {
+    const newReview = {
+      reviewer: "Reviewer",
+      status: review.status,
+      feedback: review.feedback,
+      date: new Date().toLocaleDateString(),
+    };
+
+    const updated = studies.map((s) =>
+      s.id === Number(id)
+        ? {
+            ...s,
+            status: review.status,
+            reviews: [...(s.reviews || []), newReview],
+            history: [...(s.history || []), {
+              action: `Review submitted: ${review.status}`,
+              by: "Reviewer",
+              date: new Date().toLocaleDateString(),
+            }],
+          }
+        : s
+    );
+
+    localStorage.setItem("studies", JSON.stringify(updated));
+    setStudies(updated);
+  };
 
   return (
     <div className={styles.page}>
-      {loading ? (
-        <p>Loading…</p>
-      ) : error ? (
-        <p>{error}</p>
-      ) : !study ? (
+      {!study ? (
         <p>Study not found.</p>
       ) : (
         <>
           <div className={styles.header}>
             <h1 className={styles.title}>{study.title}</h1>
-            <button className={styles.editButton} onClick={() => navigate(`/studies/${study.id}/edit`)}>
-              <i className="bi bi-pencil"></i> Edit Study
+            <button className={styles.backButton} onClick={() => navigate("/assignments")}>
+              <i className="bi bi-arrow-left"></i> Back
             </button>
           </div>
 
@@ -310,7 +337,7 @@ function SpecificStudy() {
               {activeTab === "Overview" && <OverviewContent study={study} />}
               {activeTab === "Authors" && <AuthorsContent study={study} />}
               {activeTab === "Documents" && <DocumentsContent study={study} />}
-              {activeTab === "Reviews" && <ReviewsContent study={study} />}
+              {activeTab === "Reviews" && <ReviewsContent study={study} onSubmitReview={handleSubmitReview} />}
               {activeTab === "History" && <HistoryContent study={study} />}
               {activeTab === "Bioinformatics" && <BioinformaticsContent study={study} />}
             </div>
@@ -321,4 +348,4 @@ function SpecificStudy() {
   );
 }
 
-export default SpecificStudy;
+export default AssignedStudy;
