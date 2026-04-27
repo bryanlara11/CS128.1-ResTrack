@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./NewStudy.module.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 function NewStudy() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [existingDocs, setExistingDocs] = useState([]);
   const [hasBio, setHasBio] = useState(false);
   const [title, setTitle] = useState("");
   const [abstract, setAbstract] = useState("");
@@ -54,6 +57,40 @@ function NewStudy() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!id) return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    (async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Failed to load study");
+
+        const study = data.study || {};
+        setTitle(study.title || "");
+        setAbstract(study.abstract || "");
+        setAuthors(
+          study.authorList?.length > 0
+            ? study.authorList.map((author) => ({
+                id: author.id,
+                name: author.name || "",
+                email: author.email || "",
+                department: author.department || "",
+              }))
+            : [{ ...CURRENT_USER }]
+        );
+        setExistingDocs(Array.isArray(study.documents) ? study.documents : []);
+        setIsEditMode(true);
+      } catch (err) {
+        console.error("Failed to load study for edit:", err);
+      }
+    })();
+  }, [id]);
 
   const [bioResults, setBioResults] = useState({ organismName: "", studyType: "", dataType: "", databaseSource: "", softwareTool: "", fileFormat: "", accessionNo: "", sequenceType: "", notes: "" });
   const [bioSamples, setBioSamples] = useState([{ sampleCode: "", sampleType: "", organismName: "", collectionDate: "", collectionSite: "", remarks: "" }]);
@@ -122,13 +159,13 @@ function NewStudy() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleSubmit = () => {
-  if (!title.trim()) { alert("Research title is required."); return; }
-  if (!abstract.trim()) { alert("Abstract is required."); return; }
-  if (!studyFile) { alert("Please upload a research document."); return; }
-  if (authors.some((a) => !a.name.trim() || !a.email.trim())) { alert("All authors must have a name and email."); return; }
+    if (!title.trim()) { alert("Research title is required."); return; }
+    if (!abstract.trim()) { alert("Abstract is required."); return; }
+    if (!studyFile && !existingDocs.length) { alert("Please upload a research document."); return; }
+    if (authors.some((a) => !a.name.trim() || !a.email.trim())) { alert("All authors must have a name and email."); return; }
 
-  setShowConfirm(true);
-};
+    setShowConfirm(true);
+  };
 
 const confirmSubmit = async () => {
   setShowConfirm(false);
@@ -140,20 +177,24 @@ const confirmSubmit = async () => {
   }
 
   try {
-    const res = await fetch("http://localhost:5000/api/studies", {
-      method: "POST",
+    const url = isEditMode ? `http://localhost:5000/api/studies/${id}` : "http://localhost:5000/api/studies";
+    const method = isEditMode ? "PUT" : "POST";
+    const payload = {
+      title: title.trim(),
+      abstract: abstract.trim(),
+      authorIds: authors.map((author) => author.id).filter(Boolean),
+      documents: studyFile
+        ? [{ name: studyFile.name, fileType: studyFile.type || "" }]
+        : [],
+    };
+
+    const res = await fetch(url, {
+      method,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        title: title.trim(),
-        abstract: abstract.trim(),
-        authorIds: authors.map((author) => author.id).filter(Boolean),
-        documents: studyFile
-          ? [{ name: studyFile.name, fileType: studyFile.type || "" }]
-          : [],
-      }),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
@@ -200,7 +241,16 @@ const handleDraft = () => {
     <div className={styles.page}>
 
       <div className={styles.topBar}>
-        <h2>Add New Research Study</h2>
+        {isEditMode && (
+          <button
+            type="button"
+            className={styles.backButton}
+            onClick={() => navigate(id ? `/studies/${id}` : "/studies")}
+          >
+            <i className="bi bi-arrow-left"></i> Back
+          </button>
+        )}
+        <h2>{isEditMode ? "Edit Research Study" : "Add New Research Study"}</h2>
       </div>
 
       <div className={styles.mainBox}>
@@ -222,7 +272,11 @@ const handleDraft = () => {
         <div className={styles.uploadContent}>
           <i className="bi bi-cloud-arrow-up"></i>
           <span>
-            {studyFile ? "Change file" : "Click to upload research paper"}
+            {studyFile
+              ? studyFile.name
+              : existingDocs.length > 0
+              ? `Existing: ${existingDocs[0].name}`
+              : "Click to upload research paper"}
           </span>
           <small>PDF or DOCX (max 20MB)</small>
         </div>

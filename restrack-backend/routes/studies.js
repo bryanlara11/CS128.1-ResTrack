@@ -165,6 +165,93 @@ router.post("/", requireAuth, async (req, res) => {
   }
 });
 
+// PUT /api/studies/:id
+router.put("/:id", requireAuth, async (req, res) => {
+  const userId = req.user?.id;
+  const researchId = Number.parseInt(req.params.id, 10);
+  const { title, abstract, authorIds, documents } = req.body;
+
+  if (!userId) return res.status(401).json({ error: "Invalid token payload" });
+  if (!Number.isFinite(researchId)) return res.status(400).json({ error: "Invalid study id" });
+  if (!title || !title.trim()) return res.status(400).json({ error: "Title is required" });
+  if (!abstract || !abstract.trim()) return res.status(400).json({ error: "Abstract is required" });
+
+  try {
+    const access = await pool.query(
+      `
+      SELECT 1
+      FROM research_studies rs
+      LEFT JOIN research_authors ra ON ra.research_id = rs.research_id AND ra.user_id = $2
+      WHERE rs.research_id = $1
+        AND (rs.created_by = $2 OR rs.corresponding_author_id = $2 OR ra.user_id = $2)
+      LIMIT 1
+      `,
+      [researchId, userId]
+    );
+
+    if (access.rows.length === 0) return res.status(404).json({ error: "Study not found" });
+
+    await pool.query(
+      `
+      UPDATE research_studies
+      SET title = $1,
+          abstract_summary = $2,
+          updated_at = NOW()
+      WHERE research_id = $3
+      `,
+      [title.trim(), abstract.trim(), researchId]
+    );
+
+    if (Array.isArray(authorIds)) {
+      const parsedAuthorIds = authorIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0);
+      const uniqueAuthorIds = [...new Set(parsedAuthorIds)];
+
+      if (uniqueAuthorIds.length > 0) {
+        await pool.query("DELETE FROM research_authors WHERE research_id = $1", [researchId]);
+        await pool.query(
+          `
+          INSERT INTO research_authors (research_id, user_id, author_type)
+          SELECT $1, u.user_id, 'Author'
+          FROM (
+            SELECT DISTINCT unnest AS user_id
+            FROM unnest($2::int[])
+          ) u
+          JOIN users ON users.user_id = u.user_id
+          `,
+          [researchId, uniqueAuthorIds]
+        );
+      }
+    }
+
+    const documentMeta = Array.isArray(documents)
+      ? documents.map((doc) => ({
+          name: String(doc.name || "").trim(),
+          type: String(doc.fileType || "").trim(),
+        })).filter((doc) => doc.name)
+      : [];
+
+    if (documentMeta.length > 0) {
+      const values = [];
+      const placeholders = documentMeta.map((doc, idx) => {
+        const base = idx * 5;
+        const sanitizedPath = `uploaded/${Date.now()}_${doc.name.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
+        values.push(researchId, userId, doc.name, doc.type, sanitizedPath);
+        return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
+      });
+
+      await pool.query(
+        `INSERT INTO research_documents (research_id, uploaded_by, file_name, file_type, file_path) VALUES ${placeholders.join(", ")}`,
+        values
+      );
+    }
+
+    res.json({ studyId: researchId });
+  } catch (err) {
+    console.error("Study update error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // GET /api/studies/:id
 router.get("/:id", requireAuth, async (req, res) => {
   const userId = req.user?.id;
@@ -261,6 +348,7 @@ router.get("/:id", requireAuth, async (req, res) => {
           ? `${row.submitted_first_name ?? ""} ${row.submitted_last_name ?? ""}`.trim()
           : row.submitted_email || "—",
       authorList: authorsRes.rows.map((a) => ({
+        id: a.user_id,
         name: `${a.first_name ?? ""} ${a.last_name ?? ""}`.trim() || a.email,
         email: a.email,
         department: a.department_name || "",
