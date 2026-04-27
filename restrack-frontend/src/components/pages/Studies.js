@@ -35,8 +35,8 @@ function StudyCard({ study }) {
         </span>
       </div>
       <div className={styles.cardFooter}>
-        <span className={styles.authors}>Authors: {study.authors?.length ?? study.authors}</span>
-        <span className={styles.dateModified}>Date Modified: {study.date}</span>
+        <span className={styles.authors}>Authors: {study.authorCount ?? study.authors?.length ?? 0}</span>
+        <span className={styles.dateModified}>Date Modified: {study.dateModified || study.dateCreated || ""}</span>
       </div>
     </div>
   );

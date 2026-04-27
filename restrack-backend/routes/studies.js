@@ -68,6 +68,103 @@ router.get("/my", requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/studies
+router.post("/", requireAuth, async (req, res) => {
+  const userId = req.user?.id;
+  const { title, abstract, authorIds } = req.body;
+
+  if (!userId) return res.status(401).json({ error: "Invalid token payload" });
+  if (!title || !title.trim()) return res.status(400).json({ error: "Title is required" });
+  if (!abstract || !abstract.trim()) return res.status(400).json({ error: "Abstract is required" });
+
+  const parsedAuthorIds = Array.isArray(authorIds)
+    ? authorIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0)
+    : [];
+
+  const uniqueAuthorIds = [...new Set([userId, ...parsedAuthorIds])];
+
+  try {
+    const insertRes = await pool.query(
+      `
+      INSERT INTO research_studies (
+        hru_reg_no,
+        title,
+        abstract_summary,
+        department_id,
+        corresponding_author_id,
+        current_status_id,
+        date_registered,
+        created_by
+      ) VALUES (
+        $1,
+        $2,
+        $3,
+        (SELECT department_id FROM users WHERE user_id = $4),
+        $4,
+        (SELECT status_id FROM statuses WHERE status_name = 'Pending' LIMIT 1),
+        NOW(),
+        $4
+      ) RETURNING research_id
+      `,
+      [
+        `HRU-${new Date().getFullYear()}-${Math.floor(Math.random() * 100000)
+          .toString()
+          .padStart(5, "0")}`,
+        title.trim(),
+        abstract.trim(),
+        userId,
+      ]
+    );
+
+    const researchId = insertRes.rows[0]?.research_id;
+    if (!researchId) {
+      return res.status(500).json({ error: "Failed to create study" });
+    }
+
+    if (uniqueAuthorIds.length > 0) {
+      await pool.query(
+        `
+        INSERT INTO research_authors (research_id, user_id, author_type)
+        SELECT $1, u.user_id, 'Author'
+        FROM (
+          SELECT DISTINCT unnest AS user_id
+          FROM unnest($2::int[])
+        ) u
+        JOIN users ON users.user_id = u.user_id
+        `,
+        [researchId, uniqueAuthorIds]
+      );
+    }
+
+    const documentMeta = Array.isArray(req.body.documents)
+      ? req.body.documents.map((doc) => ({
+          name: String(doc.name || "").trim(),
+          type: String(doc.fileType || "").trim(),
+        })).filter((doc) => doc.name)
+      : [];
+
+    if (documentMeta.length > 0) {
+      const values = [];
+      const placeholders = documentMeta.map((doc, idx) => {
+        const base = idx * 5;
+        const sanitizedPath = `uploaded/${Date.now()}_${doc.name.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
+        values.push(researchId, userId, doc.name, doc.type, sanitizedPath);
+        return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
+      });
+
+      await pool.query(
+        `INSERT INTO research_documents (research_id, uploaded_by, file_name, file_type, file_path) VALUES ${placeholders.join(", ")}`,
+        values
+      );
+    }
+
+    res.status(201).json({ studyId: researchId });
+  } catch (err) {
+    console.error("Study creation error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // GET /api/studies/:id
 router.get("/:id", requireAuth, async (req, res) => {
   const userId = req.user?.id;
@@ -132,8 +229,24 @@ router.get("/:id", requireAuth, async (req, res) => {
       [researchId]
     );
 
+    const docsRes = await pool.query(
+      `
+      SELECT file_name, upload_date, file_type, file_path
+      FROM research_documents
+      WHERE research_id = $1
+      ORDER BY file_id ASC
+      `,
+      [researchId]
+    );
+
     const row = studyRes.rows[0];
     const study = {
+      documents: docsRes.rows.map((doc) => ({
+        name: doc.file_name || "",
+        uploadedAt: doc.upload_date ? new Date(doc.upload_date).toLocaleDateString() : "",
+        fileType: doc.file_type || "",
+        path: doc.file_path || "",
+      })),
       id: row.research_id,
       hru: row.hru_reg_no || "",
       title: row.title || "",

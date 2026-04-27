@@ -133,31 +133,45 @@ function NewStudy() {
 const confirmSubmit = async () => {
   setShowConfirm(false);
 
-  const newStudy = {
-    id: Date.now(),
-    title,
-    abstract,
-    authorList: authors,
-    status: "Under Review",
-    hru: `HRU-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`,
-    department: authors[0]?.department || "—",
-    submittedBy: authors[0]?.name || "—",
-    dateCreated: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-    date: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-    bioinformatics: hasBio ? { results: bioResults, samples: bioSamples, datasets: bioDatasets, tools: bioTools } : null,
-    documents: studyFile ? [{ name: studyFile.name, uploadedAt: new Date().toLocaleDateString() }] : [],
-    reviews: [],
-    history: [{ action: "Study submitted", by: authors[0]?.name || "—", date: new Date().toLocaleDateString() }],
-  };
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("You must be logged in to submit a study.");
+    return;
+  }
 
-  const existing = JSON.parse(localStorage.getItem("studies") || "[]");
-  localStorage.setItem("studies", JSON.stringify([...existing, newStudy]));
+  try {
+    const res = await fetch("http://localhost:5000/api/studies", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title: title.trim(),
+        abstract: abstract.trim(),
+        authorIds: authors.map((author) => author.id).filter(Boolean),
+        documents: studyFile
+          ? [{ name: studyFile.name, fileType: studyFile.type || "" }]
+          : [],
+      }),
+    });
 
-  navigate("/studies");
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to submit study");
+    }
+
+    navigate("/studies");
+  } catch (err) {
+    alert(err?.message || "Failed to submit study. Please try again.");
+  }
 };
 
-  const handleDraft = () => {
-  if (!title.trim()) { alert("Please enter a title before saving as draft."); return; }
+const handleDraft = () => {
+  if (!title.trim()) {
+    alert("Please enter a title before saving as draft.");
+    return;
+  }
 
   const draftStudy = {
     id: Date.now(),
