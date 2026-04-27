@@ -43,78 +43,48 @@ function Signup() {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.containerWithin}>
-        <div className={styles.header}>
-          <img src={restrackLogo} alt="Logo" className={styles.logo} />
-          <h2 className={styles.systemName}>ResTrack</h2>
-        </div>
+  <div className={styles.container}>
+    <div className={styles.containerWithin}>
+
+      <div className={styles.header}>
+        <img src={restrackLogo} alt="Logo" className={styles.logo} />
+        <h2 className={styles.systemName}>ResTrack</h2>
+      </div>
 
       <form className={styles.form} onSubmit={handleSubmit}>
-  <h2 className={styles.signup}>SIGN UP</h2>
+        <h2 className={styles.signup}>SIGN UP</h2>
 
-  <div className={styles.formGrid}>
-    <div>
-      <label>First Name</label>
-      <input
-  type="text"
-  value={firstName}
-  placeholder="First Name"
-  onChange={(e) => setFirstName(e.target.value)}
-  className={styles.input}
-/>
+        <div className={styles.formGrid}>
+          <div>
+            <label>First Name</label>
+            <input type="text" value={firstName} placeholder="First Name" onChange={(e) => setFirstName(e.target.value)} className={styles.input} />
 
-      <label>Last Name</label>
-      <input
-  type="text"
-  value={lastName}
-  placeholder="Last Name"
-  onChange={(e) => setLastName(e.target.value)}
-  className={styles.input}
-/>
+            <label>Last Name</label>
+            <input type="text" value={lastName} placeholder="Last Name" onChange={(e) => setLastName(e.target.value)} className={styles.input} />
 
-      <label>Email</label>
-      <input
-  type="email"
-  value={email}
-  placeholder="Email"
-  onChange={(e) => setEmail(e.target.value)}
-  className={styles.input}
-/>
-    </div>
+            <label>Email</label>
+            <input type="email" value={email} placeholder="Email" onChange={(e) => setEmail(e.target.value)} className={styles.input} />
+          </div>
 
-    <div>
-      <label>Password</label>
-      <input
-  type="password"
-  value={password}
-  placeholder="Password"
-  onChange={(e) => setPassword(e.target.value)}
-  className={styles.input}
-/>
+          <div>
+            <label>Password</label>
+            <input type="password" value={password} placeholder="Password" onChange={(e) => setPassword(e.target.value)} className={styles.input} />
 
-      <label>Confirm Password</label>
-      <input
-  type="password"
-  value={confirmPassword}
-  placeholder="Confirm Password"
-  onChange={(e) => setConfirmPassword(e.target.value)}
-  className={styles.input}
-/>
+            <label>Confirm Password</label>
+            <input type="password" value={confirmPassword} placeholder="Confirm Password" onChange={(e) => setConfirmPassword(e.target.value)} className={styles.input} />
+          </div>
+        </div>
+
+        <p className={styles.linkText}>
+          Already have an account? <Link to="/login">Sign In</Link>
+        </p>
+
+        <button type="submit" className={styles.button}>Sign Up</button>
+      </form>
+
     </div>
   </div>
-
-  <p className={styles.linkText}>
-            Already have an account? <Link to="/login">Sign In</Link>
-          </p>
-
-  <button className={styles.button}>Sign Up</button>
-</form>
-
-          
-      </div>
-    </div>
-  );
+);
 }
 
 export default Signup;

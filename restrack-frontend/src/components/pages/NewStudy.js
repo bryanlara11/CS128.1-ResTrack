@@ -312,7 +312,6 @@ const handleDraft = () => {
                       }}
                       onFocus={() => setActiveSuggestIndex(index)}
                       onBlur={() => {
-                        // allow click selection before closing
                         setTimeout(() => {
                           setAuthorSuggestions((prev) => ({ ...prev, [index]: [] }));
                           setActiveSuggestIndex(null);
@@ -451,13 +450,13 @@ const handleDraft = () => {
           )}
         </div>
 
-      </div>
-
       <div className={styles.actions}>
         <button className={styles.draft} onClick={handleDraft}>Save as Draft</button>
         <button className={styles.submit} onClick={handleSubmit}>Submit for Review</button>
       </div>
 
+      </div>
+      
       {showConfirm && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>

@@ -49,10 +49,8 @@ function Login() {
           <img src={restrackLogo} alt="Logo" className={styles.logo} />
           <h2 className={styles.systemName}>ResTrack</h2>
         </div>
-
         <form className={styles.form} onSubmit={handleSubmit}>
           <h2 className={styles.signin}>SIGN IN</h2>
-
           <label htmlFor="email">Email</label>
           <input
             type="email"
@@ -60,8 +58,7 @@ function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={styles.input}
-            required
-          />
+            required/>
 
           <label htmlFor="password">Password</label>
           <input
@@ -70,8 +67,7 @@ function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={styles.input}
-            required
-          />
+            required/>
 
           <button type="submit" className={styles.button}>Sign in</button>
 
@@ -79,7 +75,7 @@ function Login() {
             Don't have an account? <Link to="/signup"> Sign Up</Link>
           </p>
         </form>
-      </div>
+        </div>
     </div>
   );
 }
