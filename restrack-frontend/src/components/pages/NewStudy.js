@@ -241,15 +241,13 @@ const handleDraft = () => {
     <div className={styles.page}>
 
       <div className={styles.topBar}>
-        {isEditMode && (
-          <button
-            type="button"
-            className={styles.backButton}
-            onClick={() => navigate(id ? `/studies/${id}` : "/studies")}
-          >
-            <i className="bi bi-arrow-left"></i> Back
-          </button>
-        )}
+        <button
+          type="button"
+          className={styles.backButton}
+          onClick={() => navigate(id ? `/studies/${id}` : "/studies")}
+        >
+          <i className="bi bi-arrow-left"></i> Back
+        </button>
         <h2>{isEditMode ? "Edit Research Study" : "Add New Research Study"}</h2>
       </div>
 
