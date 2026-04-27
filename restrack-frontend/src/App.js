@@ -19,6 +19,7 @@ function App() {
         <Route path="/dashboardresearcher" element={<DashboardResearcher />} />
         <Route path="/studies" element={<Studies />} />
         <Route path="/newstudy" element={<NewStudy />} />
+        <Route path="/studies/:id/edit" element={<NewStudy />} />
         <Route path="/studies/:id" element={<SpecificStudy />} />
         </Route>
       </Routes>

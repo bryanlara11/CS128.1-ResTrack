@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styles from "./SpecificStudy.module.css";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const TABS = ["Overview", "Authors", "Documents", "Reviews", "History", "Bioinformatics"];
 
@@ -227,6 +227,7 @@ function BioinformaticsContent({ study }) {
 }
 
 function SpecificStudy() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Overview");
   const { id } = useParams();
   const [study, setStudy] = useState(null);
@@ -274,7 +275,7 @@ function SpecificStudy() {
         <>
           <div className={styles.header}>
             <h1 className={styles.title}>{study.title}</h1>
-            <button className={styles.editButton}>
+            <button className={styles.editButton} onClick={() => navigate(`/studies/${study.id}/edit`)}>
               <i className="bi bi-pencil"></i> Edit Study
             </button>
           </div>
