@@ -24,11 +24,13 @@ function Login() {
         localStorage.setItem("user", JSON.stringify(data.user));
 
         // Navigate based on role
-        const roleId = data.user.role_id;
-        if (roleId === 1) {
+        const roleName = data.user.role_name;
+        if (roleName === "Admin") {
           navigate("/dashboardadmin");
-        } else if (roleId === 2) {
+        } else if (roleName === "Researcher") {
           navigate("/dashboardresearcher");
+        } else if (roleName === "Reviewer" || roleName === "TRB") {
+          navigate("/dashboardreviewer");
         } else {
           navigate("/dashboardresearcher");
         }

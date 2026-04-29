@@ -44,9 +44,12 @@ router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Find user
+    // Find user and include role name
     const result = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
+      `SELECT u.*, r.role_name
+       FROM users u
+       LEFT JOIN roles r ON u.role_id = r.role_id
+       WHERE u.email = $1`,
       [email]
     );
 
@@ -83,6 +86,7 @@ router.post("/login", async (req, res) => {
         last_name: user.last_name,
         email: user.email,
         role_id: user.role_id,
+        role_name: user.role_name,
       },
     });
   } catch (err) {
