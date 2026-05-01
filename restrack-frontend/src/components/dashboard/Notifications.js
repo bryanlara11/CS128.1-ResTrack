@@ -2,7 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import styles from "./Notifications.module.css";
 
 function Notifications() {
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState([
+  { notification_id: 1, message: "Your study HRU-2026-001 has been sent for review." },
+  { notification_id: 2, message: "Dr. Santos left feedback on your study." },
+  { notification_id: 3, message: "Your study has been approved." },
+  { notification_id: 4, message: "A revision has been requested for your study." },
+]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -57,14 +62,29 @@ function Notifications() {
       });
       fetchNotifications();
     } catch {
-      // ignore mark-read errors for now
     }
   };
+
+  const clearAll = async () => {
+  if (!token) return;
+  try {
+    await fetch("http://localhost:5000/api/notifications/clear", {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setNotifications([]);
+  } catch {
+  }
+};
 
   return (
     <div className={styles.box}>
       <div className={styles.header}>
         <h3>Notifications</h3>
+        {notifications.length > 0 && (
+          <button className={styles.clearBtn} onClick={clearAll}>
+            Clear all</button>
+        )}
       </div>
 
       <div className={styles.list}>

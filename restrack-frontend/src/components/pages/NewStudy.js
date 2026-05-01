@@ -11,6 +11,8 @@ function NewStudy() {
   const [title, setTitle] = useState("");
   const [abstract, setAbstract] = useState("");
   const [studyFile, setStudyFile] = useState(null);
+  const deadline = new Date();
+  deadline.setDate(deadline.getDate() + 15);
 
   const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
   const CURRENT_USER = {
@@ -167,12 +169,37 @@ function NewStudy() {
     setShowConfirm(true);
   };
 
-const confirmSubmit = async () => {
+  const confirmSubmit = async () => {
   setShowConfirm(false);
 
   const token = localStorage.getItem("token");
+
+  const deadlineDate = new Date();
+  deadlineDate.setDate(deadlineDate.getDate() + 15);
+  const deadlineStr = deadlineDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+
   if (!token) {
-    alert("You must be logged in to submit a study.");
+    const newStudy = {
+      id: Date.now(),
+      title,
+      abstract,
+      authorList: authors,
+      status: "Under Review",
+      deadline: deadlineStr,
+      hru: `HRU-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`,
+      department: authors[0]?.department || "—",
+      submittedBy: authors[0]?.name || "—",
+      dateCreated: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      date: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      bioinformatics: hasBio ? { results: bioResults, samples: bioSamples, datasets: bioDatasets, tools: bioTools } : null,
+      documents: studyFile ? [{ name: studyFile.name, uploadedAt: new Date().toLocaleDateString() }] : [],
+      reviews: [],
+      history: [{ action: "Study submitted", by: authors[0]?.name || "—", date: new Date().toLocaleDateString() }],
+    };
+
+    const existing = JSON.parse(localStorage.getItem("studies") || "[]");
+    localStorage.setItem("studies", JSON.stringify([...existing, newStudy]));
+    navigate("/studies");
     return;
   }
 
@@ -182,6 +209,7 @@ const confirmSubmit = async () => {
     const payload = {
       title: title.trim(),
       abstract: abstract.trim(),
+      deadline: deadlineStr,
       authorIds: authors.map((author) => author.id).filter(Boolean),
       documents: studyFile
         ? [{ name: studyFile.name, fileType: studyFile.type || "" }]
@@ -198,9 +226,7 @@ const confirmSubmit = async () => {
     });
 
     const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data?.error || "Failed to submit study");
-    }
+    if (!res.ok) throw new Error(data?.error || "Failed to submit study");
 
     navigate("/studies");
   } catch (err) {

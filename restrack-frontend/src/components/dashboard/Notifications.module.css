@@ -10,7 +10,18 @@
 .header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.clearBtn {
+  background: none;
+  border: none;
+  font-size: 0.78rem;
+  color: #ff5252;
+  cursor: pointer;
+  font-family: "Inria Sans";
+  text-decoration: underline;
 }
 
 .viewAll {

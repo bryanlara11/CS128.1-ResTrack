@@ -2,13 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./Assignments.module.css";
 
-const STATUS_CONFIG = {
-  "Approved":               { color: "#10b981", bg: "#d1fae5" },
-  "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
-  "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
-  "For Modification":       { color: "#f97316", bg: "#ffedd5" },
-  "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
-};
+const STATUS_CONFIG = [
+  { key: "Assigned",         label: "Assigned Studies",  color: "#6366f1" },
+  { key: "Pending Review",   label: "Pending Review",    color: "#f59e0b" },
+  { key: "Under Review",     label: "Under Review",      color: "#3b82f6" },
+  { key: "Completed",        label: "Completed",         color: "#10b981" },
+];
 
 function AssignmentCard({ study }) {
   const navigate = useNavigate();
@@ -39,6 +38,16 @@ function AssignmentCard({ study }) {
         <span className={styles.authors}>Authors: {study.authorList?.length ?? study.authors ?? 0}</span>
         <span className={styles.dateModified}>Date Modified: {study.date}</span>
       </div>
+
+      {study.deadline && (() => {
+        const daysLeft = Math.ceil((new Date(study.deadline) - new Date()) / (1000 * 60 * 60 * 24));
+        const color = daysLeft < 0 ? "#ef4444" : daysLeft <= 3 ? "#f97316" : "#6b7280";
+        return (
+          <div className={styles.deadline} style={{ color }}>
+            <i className="bi bi-clock"></i> Deadline: {study.deadline} · {daysLeft < 0 ? "Overdue" : `${daysLeft} days left`}
+          </div>
+        );
+      })()}
     </div>
   );
 }

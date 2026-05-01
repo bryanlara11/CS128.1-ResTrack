@@ -18,7 +18,12 @@ function Layout() {
   const isResearcher = !isReviewer;
   const roleLabel = isReviewer ? "Reviewer" : "Researcher";
 
-  const notifications = [];
+  // Dummy Notifications
+  const [notifications, setNotifications] = useState([
+  { id: 1, message: "Your study HRU-2026-001 has been sent for review.", date: "Apr 25, 2026" },
+  { id: 2, message: "Dr. Santos left feedback on your study.", date: "Apr 24, 2026" },
+  { id: 3, message: "Your study has been approved.", date: "Apr 20, 2026" },
+]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -67,18 +72,23 @@ function Layout() {
             </div>
 
             {showNotifs && (
-              <div className="notifDropdown">
+            <div className="notifDropdown">
+              <div className="notifHeader">
                 <h4 className="notifTitle">Notifications</h4>
-                {notifications.length > 0 ? notifications.map((n) => (
-                  <div key={n.id} className="notifItem">
-                    <p className="notifMessage">{n.message}</p>
-                    <span className="notifDate">{n.date}</span>
-                  </div>
-                )) : (
-                  <p className="notifEmpty">No notifications.</p>
+                {notifications.length > 0 && (
+                  <button className="notifClear" onClick={() => setNotifications([])}>Clear all</button>
                 )}
               </div>
-            )}
+              {notifications.length > 0 ? notifications.map((n) => (
+                <div key={n.id} className="notifItem">
+                  <p className="notifMessage">{n.message}</p>
+                  <span className="notifDate">{n.date}</span>
+                </div>
+              )) : (
+                <p className="notifEmpty">No notifications.</p>
+              )}
+            </div>
+          )}
           </div>
 
           <div className="userInfo" onClick={() => setShowDropdown(!showDropdown)}>

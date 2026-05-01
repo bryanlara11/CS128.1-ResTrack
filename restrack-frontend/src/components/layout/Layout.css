@@ -198,3 +198,19 @@
 .logout-button:hover {
   background: #f5f5f5;
 }
+
+.notifHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.notifClear {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: #ff5252;
+  cursor: pointer;
+  text-decoration: underline;
+}

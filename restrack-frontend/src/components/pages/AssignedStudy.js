@@ -2,15 +2,94 @@ import React, { useState, useEffect } from "react";
 import styles from "./AssignedStudy.module.css";
 import { useNavigate, useParams } from "react-router-dom";
 
-const TABS = ["Overview", "Authors", "Documents", "Reviews", "History", "Bioinformatics"];
+const TABS = ["Reviews", "Overview", "Authors", "Documents", "History", "Bioinformatics"];
 
-const STATUS_CONFIG = {
-  "Approved":               { color: "#10b981", bg: "#d1fae5" },
-  "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
-  "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
-  "For Modification":       { color: "#f97316", bg: "#ffedd5" },
-  "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
-};
+const STATUS_CONFIG = [
+  { key: "Assigned",         label: "Assigned Studies",  color: "#6366f1" },
+  { key: "Pending Review",   label: "Pending Review",    color: "#f59e0b" },
+  { key: "Under Review",     label: "Under Review",      color: "#3b82f6" },
+  { key: "Completed",        label: "Completed",         color: "#10b981" },
+];
+
+function ReviewsContent({ study, onSubmitReview }) {
+  const STATUS_COLORS = {
+    "Approved":               { color: "#10b981", bg: "#d1fae5" },
+    "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
+    "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
+    "For Major Modification":       { color: "#f97316", bg: "#ffedd5" },
+    "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
+  };
+
+  const [reviewStatus, setReviewStatus] = useState("Pending");
+  const [reviewComment, setReviewComment] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = () => {
+    if (!reviewComment.trim()) { alert("Please provide feedback comments."); return; }
+    onSubmitReview({ status: reviewStatus, feedback: reviewComment });
+    setSubmitted(true);
+  };
+
+  return (
+    <div className={styles.tabSection}>
+
+      <h4 className={styles.tabSectionTitle}>Past Reviews</h4>
+      <div className={styles.reviewList}>
+        {study.reviews?.length > 0 ? study.reviews.map((review, i) => {
+          const s = STATUS_COLORS[review.status] || STATUS_COLORS["Pending"];
+          return (
+            <div key={i} className={styles.reviewCard}>
+              <div className={styles.reviewHeader}>
+                <span className={styles.reviewerName}>{review.reviewer}</span>
+                <span className={styles.reviewChip} style={{ color: s.color, backgroundColor: s.bg }}>
+                  {review.status}
+                </span>
+              </div>
+              <p className={styles.reviewText}>{review.feedback || "No feedback provided."}</p>
+              <span className={styles.reviewDate}>{review.date}</span>
+            </div>
+          );
+        }) : <p className={styles.empty}>No reviews yet.</p>}
+      </div>
+
+      <h4 className={styles.tabSectionTitle}>Submit Your Review</h4>
+      {submitted ? (
+        <div className={styles.successMsg}>
+          <i className="bi bi-check-circle"></i> Review submitted successfully.
+        </div>
+      ) : (
+        <div className={styles.reviewForm}>
+          <div className={styles.reviewFormField}>
+            <label className={styles.reviewFormLabel}>Status</label>
+            <select
+              className={styles.reviewSelect}
+              value={reviewStatus}
+              onChange={(e) => setReviewStatus(e.target.value)}
+            >
+              <option value="Approved">Approved</option>
+              <option value="For Minor Modification">For Revision</option>
+              <option value="For Major Modification">For Revision</option>
+              <option value="Disapproved">Rejected</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+          <div className={styles.reviewFormField}>
+            <label className={styles.reviewFormLabel}>Comments</label>
+            <textarea
+              className={styles.reviewTextarea}
+              placeholder="Write your feedback here..."
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+            />
+          </div>
+          <button className={styles.reviewSubmitBtn} onClick={handleSubmit}>
+            Submit Review
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function OverviewContent({ study }) {
   return (
@@ -80,85 +159,6 @@ function DocumentsContent({ study }) {
           </div>
         )) : <p className={styles.empty}>No documents uploaded.</p>}
       </div>
-    </div>
-  );
-}
-
-function ReviewsContent({ study, onSubmitReview }) {
-  const STATUS_COLORS = {
-    "Approved":               { color: "#10b981", bg: "#d1fae5" },
-    "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
-    "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
-    "For Modification":       { color: "#f97316", bg: "#ffedd5" },
-    "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
-  };
-
-  const [reviewStatus, setReviewStatus] = useState("Pending");
-  const [reviewComment, setReviewComment] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = () => {
-    if (!reviewComment.trim()) { alert("Please provide feedback comments."); return; }
-    onSubmitReview({ status: reviewStatus, feedback: reviewComment });
-    setSubmitted(true);
-  };
-
-  return (
-    <div className={styles.tabSection}>
-
-      <h4 className={styles.tabSectionTitle}>Past Reviews</h4>
-      <div className={styles.reviewList}>
-        {study.reviews?.length > 0 ? study.reviews.map((review, i) => {
-          const s = STATUS_COLORS[review.status] || STATUS_COLORS["Pending"];
-          return (
-            <div key={i} className={styles.reviewCard}>
-              <div className={styles.reviewHeader}>
-                <span className={styles.reviewerName}>{review.reviewer}</span>
-                <span className={styles.reviewChip} style={{ color: s.color, backgroundColor: s.bg }}>
-                  {review.status}
-                </span>
-              </div>
-              <p className={styles.reviewText}>{review.feedback || "No feedback provided."}</p>
-              <span className={styles.reviewDate}>{review.date}</span>
-            </div>
-          );
-        }) : <p className={styles.empty}>No reviews yet.</p>}
-      </div>
-
-      <h4 className={styles.tabSectionTitle}>Submit Your Review</h4>
-      {submitted ? (
-        <div className={styles.successMsg}>
-          <i className="bi bi-check-circle"></i> Review submitted successfully.
-        </div>
-      ) : (
-        <div className={styles.reviewForm}>
-          <div className={styles.reviewFormField}>
-            <label className={styles.reviewFormLabel}>Status</label>
-            <select
-              className={styles.reviewSelect}
-              value={reviewStatus}
-              onChange={(e) => setReviewStatus(e.target.value)}
-            >
-              <option value="Approved">Approved</option>
-              <option value="For Revision">For Revision</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Pending">Pending</option>
-            </select>
-          </div>
-          <div className={styles.reviewFormField}>
-            <label className={styles.reviewFormLabel}>Comments</label>
-            <textarea
-              className={styles.reviewTextarea}
-              placeholder="Write your feedback here..."
-              value={reviewComment}
-              onChange={(e) => setReviewComment(e.target.value)}
-            />
-          </div>
-          <button className={styles.reviewSubmitBtn} onClick={handleSubmit}>
-            Submit Review
-          </button>
-        </div>
-      )}
     </div>
   );
 }
@@ -311,8 +311,7 @@ function AssignedStudy() {
           <div className={styles.chip}>
             <span
               className={styles.statusChip}
-              style={{ color: status?.color, backgroundColor: status?.bg }}
-            >
+              style={{ color: status?.color, backgroundColor: status?.bg }}>
               {study.status}
             </span>
             <span className={styles.hrudept}>{study.hru}</span>
@@ -320,6 +319,22 @@ function AssignedStudy() {
             <span className={styles.hrudept}>{study.department}</span>
           </div>
 
+          {study.deadline && (() => {
+            const daysLeft = Math.ceil((new Date(study.deadline) - new Date()) / (1000 * 60 * 60 * 24));
+            return (
+              <div className={styles.deadlineBar}>
+                <i className="bi bi-clock"></i>
+                <span>Review deadline: <strong>{study.deadline}</strong></span>
+                <span className={
+                  daysLeft < 0 ? styles.deadlineOverdue :
+                  daysLeft <= 3 ? styles.deadlineUrgent :
+                  styles.deadlineSafe
+                }>
+                  {daysLeft < 0 ? "Overdue" : `${daysLeft} days left`}
+                </span>
+              </div>
+            );
+          })()}
           <div className={styles.subBox}>
             <div className={styles.tabSidebar}>
               {TABS.map((tab) => (
@@ -334,10 +349,10 @@ function AssignedStudy() {
             </div>
 
             <div className={styles.tabContent}>
+              {activeTab === "Reviews" && <ReviewsContent study={study} onSubmitReview={handleSubmitReview} />}
               {activeTab === "Overview" && <OverviewContent study={study} />}
               {activeTab === "Authors" && <AuthorsContent study={study} />}
               {activeTab === "Documents" && <DocumentsContent study={study} />}
-              {activeTab === "Reviews" && <ReviewsContent study={study} onSubmitReview={handleSubmitReview} />}
               {activeTab === "History" && <HistoryContent study={study} />}
               {activeTab === "Bioinformatics" && <BioinformaticsContent study={study} />}
             </div>

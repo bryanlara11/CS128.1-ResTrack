@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "./DashboardResearcher.module.css";
 
-import Status from "../dashboard/Status";
+import StatusReviewer from "../dashboard/StatusReviewer";
 import RecentAssignments from "../dashboard/RecentAssignments";
 
 function DashboardResearcher() {
@@ -9,7 +9,7 @@ function DashboardResearcher() {
     <div className={styles.dashboard}>
 
       <div className={styles.statusRow}>
-        <Status />
+        <StatusReviewer />
       </div>
 
       <div className={styles.bottomRow}>
