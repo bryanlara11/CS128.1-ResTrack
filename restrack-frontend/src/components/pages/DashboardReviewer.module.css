@@ -1,0 +1,19 @@
+.dashboard {
+  padding: 20px;
+  background: #FFFEFE;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: fit-content;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+.statusRow {
+  width: 100%;
+}
+
+.bottomRow {
+  width: 100%;
+}

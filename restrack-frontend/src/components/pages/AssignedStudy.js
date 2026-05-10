@@ -5,24 +5,35 @@ import { useNavigate, useParams } from "react-router-dom";
 const TABS = ["Reviews", "Overview", "Authors", "Documents", "History", "Bioinformatics"];
 
 const STATUS_CONFIG = [
-  { key: "Assigned",         label: "Assigned Studies",  color: "#6366f1" },
-  { key: "Pending Review",   label: "Pending Review",    color: "#f59e0b" },
-  { key: "Under Review",     label: "Under Review",      color: "#3b82f6" },
-  { key: "Completed",        label: "Completed",         color: "#10b981" },
+  { key: "Assigned",               label: "Assigned Studies",       color: "#6366f1" },
+  { key: "Pending Review",         label: "Pending Review",         color: "#f59e0b" },
+  { key: "Under Review",           label: "Under Review",           color: "#3b82f6" },
+  { key: "Forwarded to Reviewers", label: "Forwarded to Reviewers", color: "#8b5cf6" },
+  { key: "Completed",              label: "Completed",              color: "#10b981" },
 ];
 
-function ReviewsContent({ study, onSubmitReview }) {
+function ReviewsContent({ study, onSubmitReview, role }) {
   const STATUS_COLORS = {
     "Approved":               { color: "#10b981", bg: "#d1fae5" },
     "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
     "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
-    "For Major Modification":       { color: "#f97316", bg: "#ffedd5" },
+    "For Major Modification": { color: "#f97316", bg: "#ffedd5" },
     "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
+    "Forwarded to Reviewers": { color: "#8b5cf6", bg: "#ede9fe" },
   };
 
   const [reviewStatus, setReviewStatus] = useState("Pending");
   const [reviewComment, setReviewComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
+
+  const statusOptions = [
+    "Approved",
+    "For Minor Modification",
+    "For Major Modification",
+    "Disapproved",
+    "Pending",
+    ...(role === "TRB" ? ["Forwarded to Reviewers"] : []),
+  ];
 
   const handleSubmit = () => {
     if (!reviewComment.trim()) { alert("Please provide feedback comments."); return; }
@@ -64,13 +75,10 @@ function ReviewsContent({ study, onSubmitReview }) {
             <select
               className={styles.reviewSelect}
               value={reviewStatus}
-              onChange={(e) => setReviewStatus(e.target.value)}
-            >
-              <option value="Approved">Approved</option>
-              <option value="For Minor Modification">For Revision</option>
-              <option value="For Major Modification">For Revision</option>
-              <option value="Disapproved">Rejected</option>
-              <option value="Pending">Pending</option>
+              onChange={(e) => setReviewStatus(e.target.value)}>
+              {statusOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
             </select>
           </div>
           <div className={styles.reviewFormField}>
@@ -260,17 +268,20 @@ function AssignedStudy() {
   const { id } = useParams();
   const [studies, setStudies] = useState([]);
 
+  const user = JSON.parse(localStorage.getItem("user") || '{}');
+  const role = user.role_name;
+
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("studies") || "[]");
     setStudies(saved);
   }, []);
 
   const study = studies.find((s) => s.id === Number(id));
-  const status = study ? STATUS_CONFIG[study.status] : null;
+  const status = study ? STATUS_CONFIG.find((s) => s.key === study.status) : null;
 
   const handleSubmitReview = (review) => {
     const newReview = {
-      reviewer: "Reviewer",
+      reviewer: role === "TRB" ? "TRB Chair" : "Reviewer",
       status: review.status,
       feedback: review.feedback,
       date: new Date().toLocaleDateString(),
@@ -284,7 +295,7 @@ function AssignedStudy() {
             reviews: [...(s.reviews || []), newReview],
             history: [...(s.history || []), {
               action: `Review submitted: ${review.status}`,
-              by: "Reviewer",
+              by: role === "TRB" ? "TRB Chair" : "Reviewer",
               date: new Date().toLocaleDateString(),
             }],
           }
@@ -335,6 +346,7 @@ function AssignedStudy() {
               </div>
             );
           })()}
+
           <div className={styles.subBox}>
             <div className={styles.tabSidebar}>
               {TABS.map((tab) => (
@@ -349,7 +361,7 @@ function AssignedStudy() {
             </div>
 
             <div className={styles.tabContent}>
-              {activeTab === "Reviews" && <ReviewsContent study={study} onSubmitReview={handleSubmitReview} />}
+              {activeTab === "Reviews" && <ReviewsContent study={study} onSubmitReview={handleSubmitReview} role={role} />}
               {activeTab === "Overview" && <OverviewContent study={study} />}
               {activeTab === "Authors" && <AuthorsContent study={study} />}
               {activeTab === "Documents" && <DocumentsContent study={study} />}

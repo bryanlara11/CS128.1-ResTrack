@@ -1,10 +1,10 @@
 import React from "react";
-import styles from "./DashboardResearcher.module.css";
+import styles from "./DashboardReviewer.module.css";
 
 import StatusReviewer from "../dashboard/StatusReviewer";
 import RecentAssignments from "../dashboard/RecentAssignments";
 
-function DashboardResearcher() {
+function DashboardReviewer() {
   return (
     <div className={styles.dashboard}>
 
@@ -20,4 +20,4 @@ function DashboardResearcher() {
   );
 }
 
-export default DashboardResearcher;
+export default DashboardReviewer;

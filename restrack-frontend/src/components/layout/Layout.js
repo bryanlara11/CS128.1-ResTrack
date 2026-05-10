@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import "./Layout.css";
 import restrackLogo from "../../assets/restrack_logo.png";
 
@@ -7,23 +7,29 @@ function Layout() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const user = JSON.parse(localStorage.getItem("user") || '{}');
   const displayName = user.first_name && user.last_name
     ? `${user.first_name} ${user.last_name}`
     : "User";
 
-  const isReviewer = location.pathname.startsWith("/dashboardreviewer") || location.pathname.startsWith("/assignments");
-  const isResearcher = !isReviewer;
-  const roleLabel = isReviewer ? "Reviewer" : "Researcher";
+  const role = user.role_name; // "Admin", "Researcher", "Reviewer", "TRB"
+
+  const isReviewer = role === "Reviewer" || role === "TRB";
+  const isResearcher = role === "Researcher";
+  const roleLabel = {
+    Researcher: "Researcher",
+    Reviewer: "Reviewer",
+    TRB: "TRB Chair",
+    Admin: "Admin",
+  }[role] || "User";
 
   // Dummy Notifications
   const [notifications, setNotifications] = useState([
-  { id: 1, message: "Your study HRU-2026-001 has been sent for review.", date: "Apr 25, 2026" },
-  { id: 2, message: "Dr. Santos left feedback on your study.", date: "Apr 24, 2026" },
-  { id: 3, message: "Your study has been approved.", date: "Apr 20, 2026" },
-]);
+    { id: 1, message: "Your study HRU-2026-001 has been sent for review.", date: "Apr 25, 2026" },
+    { id: 2, message: "Dr. Santos left feedback on your study.", date: "Apr 24, 2026" },
+    { id: 3, message: "Your study has been approved.", date: "Apr 20, 2026" },
+  ]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -72,23 +78,23 @@ function Layout() {
             </div>
 
             {showNotifs && (
-            <div className="notifDropdown">
-              <div className="notifHeader">
-                <h4 className="notifTitle">Notifications</h4>
-                {notifications.length > 0 && (
-                  <button className="notifClear" onClick={() => setNotifications([])}>Clear all</button>
+              <div className="notifDropdown">
+                <div className="notifHeader">
+                  <h4 className="notifTitle">Notifications</h4>
+                  {notifications.length > 0 && (
+                    <button className="notifClear" onClick={() => setNotifications([])}>Clear all</button>
+                  )}
+                </div>
+                {notifications.length > 0 ? notifications.map((n) => (
+                  <div key={n.id} className="notifItem">
+                    <p className="notifMessage">{n.message}</p>
+                    <span className="notifDate">{n.date}</span>
+                  </div>
+                )) : (
+                  <p className="notifEmpty">No notifications.</p>
                 )}
               </div>
-              {notifications.length > 0 ? notifications.map((n) => (
-                <div key={n.id} className="notifItem">
-                  <p className="notifMessage">{n.message}</p>
-                  <span className="notifDate">{n.date}</span>
-                </div>
-              )) : (
-                <p className="notifEmpty">No notifications.</p>
-              )}
-            </div>
-          )}
+            )}
           </div>
 
           <div className="userInfo" onClick={() => setShowDropdown(!showDropdown)}>

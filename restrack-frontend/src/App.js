@@ -26,6 +26,8 @@ function App() {
         <Route path="/dashboardreviewer" element={<DashboardReviewer />} />
         <Route path="/studies/:id/edit" element={<NewStudy />} />
         <Route path="/studies/:id" element={<SpecificStudy />} />
+        <Route path="/trb-chair/assignments" element={<Assignments role="trb_chair" />} />
+        <Route path="/reviewer/assignments" element={<Assignments role="reviewer" />} />
         <Route path="/assignments" element={<Assignments />} />
         <Route path="/assignments/:id" element={<AssignedStudy />} />
         </Route>

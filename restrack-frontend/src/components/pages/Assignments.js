@@ -2,16 +2,24 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./Assignments.module.css";
 
-const STATUS_CONFIG = [
-  { key: "Assigned",         label: "Assigned Studies",  color: "#6366f1" },
-  { key: "Pending Review",   label: "Pending Review",    color: "#f59e0b" },
-  { key: "Under Review",     label: "Under Review",      color: "#3b82f6" },
-  { key: "Completed",        label: "Completed",         color: "#10b981" },
+const REVIEWER_STATUS_CONFIG = [
+  { key: "Assigned",       label: "Assigned Studies", color: "#6366f1" },
+  { key: "Pending Review", label: "Pending Review",   color: "#f59e0b" },
+  { key: "Under Review",   label: "Under Review",     color: "#3b82f6" },
+  { key: "Completed",      label: "Completed",        color: "#10b981" },
 ];
 
-function AssignmentCard({ study }) {
+const TRB_STATUS_CONFIG = [
+  { key: "Assigned",               label: "Assigned Studies",       color: "#6366f1" },
+  { key: "Pending Review",         label: "Pending Review",         color: "#f59e0b" },
+  { key: "Under Review",           label: "Under Review",           color: "#3b82f6" },
+  { key: "Forwarded to Reviewers", label: "Forwarded to Reviewers", color: "#8b5cf6" },
+  { key: "Completed",              label: "Completed",              color: "#10b981" },
+];
+
+function AssignmentCard({ study, statusConfig }) {
   const navigate = useNavigate();
-  const status = STATUS_CONFIG[study.status] || { color: "#6b7280", bg: "#f3f4f6" };
+  const status = statusConfig.find((s) => s.key === study.status) || { color: "#6b7280" };
 
   return (
     <div className={styles.studyCard}>
@@ -53,13 +61,16 @@ function AssignmentCard({ study }) {
 }
 
 function Assignments() {
+  const user = JSON.parse(localStorage.getItem("user") || '{}');
+  const role = user.role_name;
+  const STATUS_CONFIG = role === "TRB" ? TRB_STATUS_CONFIG : REVIEWER_STATUS_CONFIG;
+
   const [studies, setStudies] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("studies") || "[]");
-    // reviewers see all submitted studies (not drafts)
     setStudies(saved.filter((s) => s.status !== "Draft"));
   }, []);
 
@@ -90,11 +101,10 @@ function Assignments() {
         <select
           className={styles.statusDropdown}
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
+          onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="All">All Statuses</option>
-          {Object.keys(STATUS_CONFIG).map((s) => (
-            <option key={s} value={s}>{s}</option>
+          {STATUS_CONFIG.map((s) => (
+            <option key={s.key} value={s.key}>{s.label}</option>
           ))}
         </select>
       </div>
@@ -102,7 +112,7 @@ function Assignments() {
       <div className={styles.list}>
         {filtered.length > 0 ? (
           filtered.map((study) => (
-            <AssignmentCard key={study.id} study={study} />
+            <AssignmentCard key={study.id} study={study} statusConfig={STATUS_CONFIG} />
           ))
         ) : (
           <p className={styles.empty}>No assignments found.</p>
