@@ -10,7 +10,9 @@ import SpecificStudy from "./components/pages/SpecificStudy";
 import DashboardReviewer from "./components/pages/DashboardReviewer";
 import Assignments from "./components/pages/Assignments";
 import AssignedStudy from "./components/pages/AssignedStudy";
-
+import DashboardTRB from "./components/pages/DashboardTRB";
+import AssignmentsTRB from "./components/pages/AssignmentsTRB";
+import AssignedStudyTRB from "./components/pages/AssignedStudyTRB";
 
 function App() {
   return (
@@ -20,16 +22,19 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/" element={<Layout />}>
-        <Route path="/dashboardresearcher" element={<DashboardResearcher />} />
-        <Route path="/studies" element={<Studies />} />
-        <Route path="/newstudy" element={<NewStudy />} />
-        <Route path="/dashboardreviewer" element={<DashboardReviewer />} />
-        <Route path="/studies/:id/edit" element={<NewStudy />} />
-        <Route path="/studies/:id" element={<SpecificStudy />} />
-        <Route path="/trb-chair/assignments" element={<Assignments role="trb_chair" />} />
-        <Route path="/reviewer/assignments" element={<Assignments role="reviewer" />} />
-        <Route path="/assignments" element={<Assignments />} />
-        <Route path="/assignments/:id" element={<AssignedStudy />} />
+          <Route path="/dashboardresearcher" element={<DashboardResearcher />} />
+          <Route path="/studies" element={<Studies />} />
+          <Route path="/newstudy" element={<NewStudy />} />
+          <Route path="/studies/:id/edit" element={<NewStudy />} />
+          <Route path="/studies/:id" element={<SpecificStudy />} />
+
+          <Route path="/dashboardreviewer" element={<DashboardReviewer />} />
+          <Route path="/assignments" element={<Assignments />} />
+          <Route path="/assignments/:id" element={<AssignedStudy />} />
+
+          <Route path="/dashboardtrb" element={<DashboardTRB />} />
+          <Route path="/trb-chair/assignments" element={<AssignmentsTRB />} />
+          <Route path="/trb-chair/assignments/:id" element={<AssignedStudyTRB />} />
         </Route>
       </Routes>
     </BrowserRouter>

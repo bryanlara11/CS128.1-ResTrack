@@ -2,17 +2,19 @@ import React, { useEffect, useState } from "react";
 import styles from "./StatusReviewer.module.css";
 
 const STATUSES = [
-  { key: "Assigned",       label: "Assigned Studies", color: "#6366f1" },
-  { key: "Pending Review", label: "Pending Review",   color: "#f59e0b" },
-  { key: "Under Review",   label: "Under Review",     color: "#3b82f6" },
-  { key: "Completed",      label: "Completed",        color: "#10b981" },
+  { key: "Assigned",               label: "Assigned Studies",       color: "#6366f1" },
+  { key: "Pending Review",         label: "Pending Review",         color: "#f59e0b" },
+  { key: "Under Review",           label: "Under Review",           color: "#3b82f6" },
+  { key: "Forwarded to Reviewers", label: "Forwarded to Reviewers", color: "#8b5cf6" },
+  { key: "Completed",              label: "Completed",              color: "#10b981" },
 ];
 
-function StatusReviewer() {
+function StatusTRB() {
   const [counts, setCounts] = useState({
     "Assigned": 0,
     "Pending Review": 0,
     "Under Review": 0,
+    "Forwarded to Reviewers": 0,
     "Completed": 0,
   });
 
@@ -28,6 +30,7 @@ function StatusReviewer() {
         "Assigned": 0,
         "Pending Review": 0,
         "Under Review": 0,
+        "Forwarded to Reviewers": 0,
         "Completed": 0,
       };
 
@@ -45,7 +48,7 @@ function StatusReviewer() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:5000/api/dashboard/reviewer/stats", {
+        const res = await fetch("http://localhost:5000/api/dashboard/trb/stats", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -82,4 +85,4 @@ function StatusReviewer() {
   );
 }
 
-export default StatusReviewer;
+export default StatusTRB;

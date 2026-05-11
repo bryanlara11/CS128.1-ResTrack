@@ -5,10 +5,11 @@ import { useNavigate, useParams } from "react-router-dom";
 const TABS = ["Reviews", "Overview", "Authors", "Documents", "History", "Bioinformatics"];
 
 const STATUS_CONFIG = [
-  { key: "Assigned",       label: "Assigned Studies", color: "#6366f1" },
-  { key: "Pending Review", label: "Pending Review",   color: "#f59e0b" },
-  { key: "Under Review",   label: "Under Review",     color: "#3b82f6" },
-  { key: "Completed",      label: "Completed",        color: "#10b981" },
+  { key: "Assigned",               label: "Assigned Studies",       color: "#6366f1" },
+  { key: "Pending Review",         label: "Pending Review",         color: "#f59e0b" },
+  { key: "Under Review",           label: "Under Review",           color: "#3b82f6" },
+  { key: "Forwarded to Reviewers", label: "Forwarded to Reviewers", color: "#8b5cf6" },
+  { key: "Completed",              label: "Completed",              color: "#10b981" },
 ];
 
 function ReviewsContent({ study, onSubmitReview }) {
@@ -18,6 +19,7 @@ function ReviewsContent({ study, onSubmitReview }) {
     "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
     "For Major Modification": { color: "#f97316", bg: "#ffedd5" },
     "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
+    "Forwarded to Reviewers": { color: "#8b5cf6", bg: "#ede9fe" },
   };
 
   const [reviewStatus, setReviewStatus] = useState("Pending");
@@ -73,6 +75,7 @@ function ReviewsContent({ study, onSubmitReview }) {
               <option value="For Major Modification">For Major Modification</option>
               <option value="Disapproved">Disapproved</option>
               <option value="Pending">Pending</option>
+              <option value="Forwarded to Reviewers">Forwarded to Reviewers</option>
             </select>
           </div>
           <div className={styles.reviewFormField}>
@@ -268,7 +271,7 @@ function BioinformaticsContent({ study }) {
   );
 }
 
-function AssignedStudy() {
+function AssignedStudyTRB() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Overview");
   const { id } = useParams();
@@ -284,7 +287,7 @@ function AssignedStudy() {
 
   const handleSubmitReview = (review) => {
     const newReview = {
-      reviewer: "Reviewer",
+      reviewer: "TRB Chair",
       status: review.status,
       feedback: review.feedback,
       date: new Date().toLocaleDateString(),
@@ -298,7 +301,7 @@ function AssignedStudy() {
             reviews: [...(s.reviews || []), newReview],
             history: [...(s.history || []), {
               action: `Review submitted: ${review.status}`,
-              by: "Reviewer",
+              by: "TRB Chair",
               date: new Date().toLocaleDateString(),
             }],
           }
@@ -317,7 +320,7 @@ function AssignedStudy() {
         <>
           <div className={styles.header}>
             <h1 className={styles.title}>{study.title}</h1>
-            <button className={styles.backButton} onClick={() => navigate("/assignments")}>
+            <button className={styles.backButton} onClick={() => navigate("/trb-chair/assignments")}>
               <i className="bi bi-arrow-left"></i> Back
             </button>
           </div>
@@ -378,4 +381,4 @@ function AssignedStudy() {
   );
 }
 
-export default AssignedStudy;
+export default AssignedStudyTRB;

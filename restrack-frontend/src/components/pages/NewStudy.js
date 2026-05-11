@@ -30,6 +30,12 @@ function NewStudy() {
   const [activeSuggestIndex, setActiveSuggestIndex] = useState(null);
   const debounceRef = useRef(null);
 
+  const [modal, setModal] = useState({ show: false, message: "" });
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const showModal = (message) => setModal({ show: true, message });
+  const closeModal = () => setModal({ show: false, message: "" });
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -158,34 +164,92 @@ function NewStudy() {
   const deleteTool = (i) => setBioTools(bioTools.filter((_, idx) => idx !== i));
   const updateTool = (i, field, value) => { const u = [...bioTools]; u[i][field] = value; setBioTools(u); };
 
-  const [showConfirm, setShowConfirm] = useState(false);
-
   const handleSubmit = () => {
-    if (!title.trim()) { alert("Research title is required."); return; }
-    if (!abstract.trim()) { alert("Abstract is required."); return; }
-    if (!studyFile && !existingDocs.length) { alert("Please upload a research document."); return; }
-    if (authors.some((a) => !a.name.trim() || !a.email.trim())) { alert("All authors must have a name and email."); return; }
+    if (!title.trim()) { showModal("Research title is required."); return; }
+    if (!abstract.trim()) { showModal("Abstract is required."); return; }
+    if (!studyFile && !existingDocs.length) { showModal("Please upload a research document."); return; }
+    if (authors.some((a) => !a.name.trim() || !a.email.trim())) { showModal("All authors must have a name and email."); return; }
 
     setShowConfirm(true);
   };
 
   const confirmSubmit = async () => {
-  setShowConfirm(false);
+    setShowConfirm(false);
 
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
-  const deadlineDate = new Date();
-  deadlineDate.setDate(deadlineDate.getDate() + 15);
-  const deadlineStr = deadlineDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    const deadlineDate = new Date();
+    deadlineDate.setDate(deadlineDate.getDate() + 15);
+    const deadlineStr = deadlineDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 
-  if (!token) {
-    const newStudy = {
+    if (!token) {
+      const newStudy = {
+        id: Date.now(),
+        title,
+        abstract,
+        authorList: authors,
+        status: "Under Review",
+        deadline: deadlineStr,
+        hru: `HRU-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`,
+        department: authors[0]?.department || "—",
+        submittedBy: authors[0]?.name || "—",
+        dateCreated: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+        date: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+        bioinformatics: hasBio ? { results: bioResults, samples: bioSamples, datasets: bioDatasets, tools: bioTools } : null,
+        documents: studyFile ? [{ name: studyFile.name, uploadedAt: new Date().toLocaleDateString() }] : [],
+        reviews: [],
+        history: [{ action: "Study submitted", by: authors[0]?.name || "—", date: new Date().toLocaleDateString() }],
+      };
+
+      const existing = JSON.parse(localStorage.getItem("studies") || "[]");
+      localStorage.setItem("studies", JSON.stringify([...existing, newStudy]));
+      navigate("/studies");
+      return;
+    }
+
+    try {
+      const url = isEditMode ? `http://localhost:5000/api/studies/${id}` : "http://localhost:5000/api/studies";
+      const method = isEditMode ? "PUT" : "POST";
+      const payload = {
+        title: title.trim(),
+        abstract: abstract.trim(),
+        deadline: deadlineStr,
+        authorIds: authors.map((author) => author.id).filter(Boolean),
+        documents: studyFile
+          ? [{ name: studyFile.name, fileType: studyFile.type || "" }]
+          : [],
+      };
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to submit study");
+
+      navigate("/studies");
+    } catch (err) {
+      showModal(err?.message || "Failed to submit study. Please try again.");
+    }
+  };
+
+  const handleDraft = () => {
+    if (!title.trim()) {
+      showModal("Please enter a title before saving as draft.");
+      return;
+    }
+
+    const draftStudy = {
       id: Date.now(),
       title,
       abstract,
       authorList: authors,
-      status: "Under Review",
-      deadline: deadlineStr,
+      status: "Draft",
       hru: `HRU-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`,
       department: authors[0]?.department || "—",
       submittedBy: authors[0]?.name || "—",
@@ -194,74 +258,14 @@ function NewStudy() {
       bioinformatics: hasBio ? { results: bioResults, samples: bioSamples, datasets: bioDatasets, tools: bioTools } : null,
       documents: studyFile ? [{ name: studyFile.name, uploadedAt: new Date().toLocaleDateString() }] : [],
       reviews: [],
-      history: [{ action: "Study submitted", by: authors[0]?.name || "—", date: new Date().toLocaleDateString() }],
+      history: [{ action: "Draft saved", by: authors[0]?.name || "—", date: new Date().toLocaleDateString() }],
     };
 
     const existing = JSON.parse(localStorage.getItem("studies") || "[]");
-    localStorage.setItem("studies", JSON.stringify([...existing, newStudy]));
-    navigate("/studies");
-    return;
-  }
-
-  try {
-    const url = isEditMode ? `http://localhost:5000/api/studies/${id}` : "http://localhost:5000/api/studies";
-    const method = isEditMode ? "PUT" : "POST";
-    const payload = {
-      title: title.trim(),
-      abstract: abstract.trim(),
-      deadline: deadlineStr,
-      authorIds: authors.map((author) => author.id).filter(Boolean),
-      documents: studyFile
-        ? [{ name: studyFile.name, fileType: studyFile.type || "" }]
-        : [],
-    };
-
-    const res = await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error || "Failed to submit study");
+    localStorage.setItem("studies", JSON.stringify([...existing, draftStudy]));
 
     navigate("/studies");
-  } catch (err) {
-    alert(err?.message || "Failed to submit study. Please try again.");
-  }
-};
-
-const handleDraft = () => {
-  if (!title.trim()) {
-    alert("Please enter a title before saving as draft.");
-    return;
-  }
-
-  const draftStudy = {
-    id: Date.now(),
-    title,
-    abstract,
-    authorList: authors,
-    status: "Draft",
-    hru: `HRU-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`,
-    department: authors[0]?.department || "—",
-    submittedBy: authors[0]?.name || "—",
-    dateCreated: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-    date: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-    bioinformatics: hasBio ? { results: bioResults, samples: bioSamples, datasets: bioDatasets, tools: bioTools } : null,
-    documents: studyFile ? [{ name: studyFile.name, uploadedAt: new Date().toLocaleDateString() }] : [],
-    reviews: [],
-    history: [{ action: "Draft saved", by: authors[0]?.name || "—", date: new Date().toLocaleDateString() }],
   };
-
-  const existing = JSON.parse(localStorage.getItem("studies") || "[]");
-  localStorage.setItem("studies", JSON.stringify([...existing, draftStudy]));
-
-  navigate("/studies");
-};
 
   return (
     <div className={styles.page}>
@@ -290,96 +294,90 @@ const handleDraft = () => {
             <textarea className={styles.textarea} value={abstract} onChange={(e) => setAbstract(e.target.value)} />
           </div>
           <div className={styles.uploadWrapper}>
-  <label className={styles.uploadBox}>
-    <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setStudyFile(e.target.files[0])} className={styles.hiddenInput}/>
-
-        <div className={styles.uploadContent}>
-          <i className="bi bi-cloud-arrow-up"></i>
-          <span>
-            {studyFile
-              ? studyFile.name
-              : existingDocs.length > 0
-              ? `Existing: ${existingDocs[0].name}`
-              : "Click to upload research paper"}
-          </span>
-          <small>PDF or DOCX (max 20MB)</small>
-        </div>
-      </label>
-
-      {studyFile && (
-        <div className={styles.filePreview}>
-          <i className="bi bi-file-earmark-text"></i>
-          <span>{studyFile.name}</span>
-        </div>
-      )}
-    </div>
+            <label className={styles.uploadBox}>
+              <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setStudyFile(e.target.files[0])} className={styles.hiddenInput} />
+              <div className={styles.uploadContent}>
+                <i className="bi bi-cloud-arrow-up"></i>
+                <span>
+                  {studyFile
+                    ? studyFile.name
+                    : existingDocs.length > 0
+                    ? `Existing: ${existingDocs[0].name}`
+                    : "Click to upload research paper"}
+                </span>
+                <small>PDF or DOCX (max 20MB)</small>
+              </div>
+            </label>
+            {studyFile && (
+              <div className={styles.filePreview}>
+                <i className="bi bi-file-earmark-text"></i>
+                <span>{studyFile.name}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className={styles.subBox}>
           <h3>AUTHORS & CO-AUTHORS</h3>
           {authors.map((author, index) => (
             <div key={index} className={styles.authorCard}>
-                {index !== 0 && (
-                  <i className={`bi bi-trash ${styles.trashIcon}`} onClick={() => deleteAuthor(index)}></i>
-                )}
-
-                <div className={styles.grid}>
-                  <div className={styles.field}>
-                    <label>Name *</label>
-                    <input
-                      className={styles.input}
-                      value={author.name}
-                      onChange={(e) => {
-                        updateAuthor(index, "name", e.target.value);
-                        fetchSuggestions(index, e.target.value);
-                        setActiveSuggestIndex(index);
-                      }}
-                      onFocus={() => setActiveSuggestIndex(index)}
-                      onBlur={() => {
-                        setTimeout(() => {
-                          setAuthorSuggestions((prev) => ({ ...prev, [index]: [] }));
-                          setActiveSuggestIndex(null);
-                        }, 150);
-                      }}
-                      autoComplete="off"
-                    />
-                    {activeSuggestIndex === index &&
-                      (authorSuggestions[index]?.length ?? 0) > 0 && (
-                        <div className={styles.suggestions}>
-                          {authorSuggestions[index].map((u) => (
-                            <div
-                              key={u.id}
-                              className={styles.suggestionItem}
-                              onMouseDown={() => chooseSuggestion(index, u)}
-                            >
-                              <div className={styles.suggestionName}>{u.name}</div>
-                              <div className={styles.suggestionMeta}>
-                                {u.email} {u.department ? `• ${u.department}` : ""}
-                              </div>
+              {index !== 0 && (
+                <i className={`bi bi-trash ${styles.trashIcon}`} onClick={() => deleteAuthor(index)}></i>
+              )}
+              <div className={styles.grid}>
+                <div className={styles.field}>
+                  <label>Name *</label>
+                  <input
+                    className={styles.input}
+                    value={author.name}
+                    onChange={(e) => {
+                      updateAuthor(index, "name", e.target.value);
+                      fetchSuggestions(index, e.target.value);
+                      setActiveSuggestIndex(index);
+                    }}
+                    onFocus={() => setActiveSuggestIndex(index)}
+                    onBlur={() => {
+                      setTimeout(() => {
+                        setAuthorSuggestions((prev) => ({ ...prev, [index]: [] }));
+                        setActiveSuggestIndex(null);
+                      }, 150);
+                    }}
+                    autoComplete="off"
+                  />
+                  {activeSuggestIndex === index &&
+                    (authorSuggestions[index]?.length ?? 0) > 0 && (
+                      <div className={styles.suggestions}>
+                        {authorSuggestions[index].map((u) => (
+                          <div
+                            key={u.id}
+                            className={styles.suggestionItem}
+                            onMouseDown={() => chooseSuggestion(index, u)}
+                          >
+                            <div className={styles.suggestionName}>{u.name}</div>
+                            <div className={styles.suggestionMeta}>
+                              {u.email} {u.department ? `• ${u.department}` : ""}
                             </div>
-                          ))}
-                        </div>
-                      )}
-                  </div>
-                  <div className={styles.field}>
-                    <label>Email *</label>
-                    <input className={styles.input} value={author.email} 
-                      onChange={(e) => updateAuthor(index, "email", e.target.value)} />
-                  </div>
-                  <div className={`${styles.field} ${styles.fullWidth}`}>
-                    <label>Department (optional)</label>
-                    <input className={styles.input} value={author.department}
-                      onChange={(e) => updateAuthor(index, "department", e.target.value)} />
-                  </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                 </div>
-
-                {index === 0 && <span className={styles.youBadge}>You</span>}
-
+                <div className={styles.field}>
+                  <label>Email *</label>
+                  <input className={styles.input} value={author.email}
+                    onChange={(e) => updateAuthor(index, "email", e.target.value)} />
+                </div>
+                <div className={`${styles.field} ${styles.fullWidth}`}>
+                  <label>Department (optional)</label>
+                  <input className={styles.input} value={author.department}
+                    onChange={(e) => updateAuthor(index, "department", e.target.value)} />
+                </div>
               </div>
-            ))}
+              {index === 0 && <span className={styles.youBadge}>You</span>}
+            </div>
+          ))}
           <button className={styles.addAuthor} onClick={addAuthor}>+ Add Co-author</button>
         </div>
-
 
         <div className={styles.subBox}>
           <h3>BIOINFORMATICS DATA (OPTIONAL)</h3>
@@ -390,8 +388,6 @@ const handleDraft = () => {
 
           {hasBio && (
             <div className={styles.bioFields}>
-
-              {/* RESULTS */}
               <h4 className={styles.bioSectionTitle}>Results</h4>
               <div className={styles.grid}>
                 {[["organismName","Organism Name"],["studyType","Study Type"],["dataType","Data Type"],["databaseSource","Database Source"],["softwareTool","Software Tool Used"],["fileFormat","File Format"],["accessionNo","Accession No"],["sequenceType","Sequence Type"]].map(([field, label]) => (
@@ -426,7 +422,6 @@ const handleDraft = () => {
               ))}
               <button className={styles.addAuthor} onClick={addSample}>+ Add Sample</button>
 
-              {/* DATASETS */}
               <h4 className={styles.bioSectionTitle}>Datasets</h4>
               {bioDatasets.map((dataset, i) => (
                 <div key={i} className={styles.authorCard}>
@@ -469,18 +464,29 @@ const handleDraft = () => {
                 </div>
               ))}
               <button className={styles.addAuthor} onClick={addTool}>+ Add Tool</button>
-
             </div>
           )}
         </div>
 
-      <div className={styles.actions}>
-        <button className={styles.draft} onClick={handleDraft}>Save as Draft</button>
-        <button className={styles.submit} onClick={handleSubmit}>Submit for Review</button>
-      </div>
+        <div className={styles.actions}>
+          <button className={styles.draft} onClick={handleDraft}>Save as Draft</button>
+          <button className={styles.submit} onClick={handleSubmit}>Submit for Review</button>
+        </div>
 
       </div>
-      
+
+      {modal.show && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <h3>Notice</h3>
+            <p>{modal.message}</p>
+            <div className={styles.modalActions}>
+              <button className={styles.confirmBtn} onClick={closeModal}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showConfirm && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
@@ -492,7 +498,7 @@ const handleDraft = () => {
             </div>
           </div>
         </div>
-)}
+      )}
 
     </div>
   );

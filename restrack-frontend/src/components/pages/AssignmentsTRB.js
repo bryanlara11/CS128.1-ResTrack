@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import styles from "./Assignments.module.css";
 
 const STATUS_CONFIG = [
-  { key: "Assigned",       label: "Assigned Studies", color: "#6366f1" },
-  { key: "Pending Review", label: "Pending Review",   color: "#f59e0b" },
-  { key: "Under Review",   label: "Under Review",     color: "#3b82f6" },
-  { key: "Completed",      label: "Completed",        color: "#10b981" },
+  { key: "Assigned",               label: "Assigned Studies",       color: "#6366f1" },
+  { key: "Pending Review",         label: "Pending Review",         color: "#f59e0b" },
+  { key: "Under Review",           label: "Under Review",           color: "#3b82f6" },
+  { key: "Forwarded to Reviewers", label: "Forwarded to Reviewers", color: "#8b5cf6" },
+  { key: "Completed",              label: "Completed",              color: "#10b981" },
 ];
 
 function AssignmentCard({ study }) {
@@ -17,7 +18,7 @@ function AssignmentCard({ study }) {
     <div className={styles.studyCard}>
       <div className={styles.cardTop}>
         <span className={styles.studyTitle}>{study.title}</span>
-        <button className={styles.eyeButton} onClick={() => navigate(`/assignments/${study.id}`)}>
+        <button className={styles.eyeButton} onClick={() => navigate(`/trb-chair/assignments/${study.id}`)}>
           <i className="bi bi-eye"></i>
         </button>
       </div>
@@ -52,7 +53,7 @@ function AssignmentCard({ study }) {
   );
 }
 
-function Assignments() {
+function AssignmentsTRB() {
   const [studies, setStudies] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -110,4 +111,4 @@ function Assignments() {
   );
 }
 
-export default Assignments;
+export default AssignmentsTRB;
