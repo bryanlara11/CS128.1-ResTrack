@@ -13,7 +13,7 @@ import AssignedStudy from "./components/pages/AssignedStudy";
 import DashboardTRB from "./components/pages/DashboardTRB";
 import AssignmentsTRB from "./components/pages/AssignmentsTRB";
 import AssignedStudyTRB from "./components/pages/AssignedStudyTRB";
-import DashboardAdmin from "./pages/dashboardadmin";
+import DashboardAdmin from "./components/pages/DashboardAdmin";
 
 
 function App() {

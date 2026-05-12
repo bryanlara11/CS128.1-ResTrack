@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./NewStudy.module.css";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -15,15 +15,24 @@ function NewStudy() {
   deadline.setDate(deadline.getDate() + 15);
 
   const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
-  const CURRENT_USER = {
-    id: savedUser.id,
-    name:
-      savedUser.first_name && savedUser.last_name
-        ? `${savedUser.first_name} ${savedUser.last_name}`
-        : "You",
-    email: savedUser.email || "",
-    department: savedUser.department || "",
-  };
+  const CURRENT_USER = useMemo(
+    () => ({
+      id: savedUser.id,
+      name:
+        savedUser.first_name && savedUser.last_name
+          ? `${savedUser.first_name} ${savedUser.last_name}`
+          : "You",
+      email: savedUser.email || "",
+      department: savedUser.department || "",
+    }),
+    [
+      savedUser.id,
+      savedUser.first_name,
+      savedUser.last_name,
+      savedUser.email,
+      savedUser.department,
+    ]
+  );
   const [authors, setAuthors] = useState([{ ...CURRENT_USER }]);
 
   const [authorSuggestions, setAuthorSuggestions] = useState({});
@@ -98,7 +107,7 @@ function NewStudy() {
         console.error("Failed to load study for edit:", err);
       }
     })();
-  }, [id]);
+  }, [id, CURRENT_USER]);
 
   const [bioResults, setBioResults] = useState({ organismName: "", studyType: "", dataType: "", databaseSource: "", softwareTool: "", fileFormat: "", accessionNo: "", sequenceType: "", notes: "" });
   const [bioSamples, setBioSamples] = useState([{ sampleCode: "", sampleType: "", organismName: "", collectionDate: "", collectionSite: "", remarks: "" }]);
