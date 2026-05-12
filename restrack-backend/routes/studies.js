@@ -10,6 +10,53 @@ function parseLimit(value, fallback) {
   return Math.min(n, 100);
 }
 
+async function getStatusId(statusName) {
+  const result = await pool.query(
+    "SELECT status_id FROM statuses WHERE status_name = $1 LIMIT 1",
+    [statusName]
+  );
+  if (result.rows.length > 0) return result.rows[0].status_id;
+  const insertRes = await pool.query(
+    "INSERT INTO statuses (status_name) VALUES ($1) RETURNING status_id",
+    [statusName]
+  );
+  return insertRes.rows[0].status_id;
+}
+
+function normalizeTrbTargetStatus(statusName) {
+  const status = String(statusName || "").trim();
+  if (status === "Forwarded to Reviewers" || status === "Approved" || status === "Pending" || status === "Under Review") {
+    return "Forwarded to Reviewers";
+  }
+  if (status === "For Minor Modification" || status === "For Major Modification") {
+    return "For Revision";
+  }
+  if (status === "Disapproved") {
+    return "Disapproved";
+  }
+  return "Pending";
+}
+
+function normalizeReviewerTargetStatus(statusName) {
+  const status = String(statusName || "").trim();
+  if (status === "Approved") return "Approved";
+  if (status === "For Minor Modification" || status === "For Major Modification") return "For Revision";
+  if (status === "Disapproved") return "Disapproved";
+  return "Pending";
+}
+
+async function getUserRole(userId) {
+  const result = await pool.query(
+    `SELECT r.role_name FROM users u LEFT JOIN roles r ON u.role_id = r.role_id WHERE u.user_id = $1 LIMIT 1`,
+    [userId]
+  );
+  return String(result.rows[0]?.role_name || "").trim();
+}
+
+function normalizeRole(roleName) {
+  return String(roleName || "").trim();
+}
+
 // GET /api/studies/my?limit=3
 router.get("/my", requireAuth, async (req, res) => {
   const userId = req.user?.id;
@@ -84,6 +131,7 @@ router.post("/", requireAuth, async (req, res) => {
   const uniqueAuthorIds = [...new Set([userId, ...parsedAuthorIds])];
 
   try {
+    const pendingStatusId = await getStatusId("Pending");
     const insertRes = await pool.query(
       `
       INSERT INTO research_studies (
@@ -91,6 +139,7 @@ router.post("/", requireAuth, async (req, res) => {
         title,
         abstract_summary,
         department_id,
+        trb_required,
         corresponding_author_id,
         current_status_id,
         date_registered,
@@ -100,8 +149,9 @@ router.post("/", requireAuth, async (req, res) => {
         $2,
         $3,
         (SELECT department_id FROM users WHERE user_id = $4),
+        true,
         $4,
-        (SELECT status_id FROM statuses WHERE status_name = 'Pending' LIMIT 1),
+        $5,
         NOW(),
         $4
       ) RETURNING research_id
@@ -113,6 +163,7 @@ router.post("/", requireAuth, async (req, res) => {
         title.trim(),
         abstract.trim(),
         userId,
+        pendingStatusId,
       ]
     );
 
@@ -252,26 +303,222 @@ router.put("/:id", requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/studies/assignments
+router.get("/assignments", requireAuth, async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: "Invalid token payload" });
+  const roleName = normalizeRole(req.user?.role_name || await getUserRole(userId));
+
+  if (roleName !== "TRB" && roleName !== "Reviewer") {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+
+  try {
+    const query = `
+      SELECT DISTINCT
+        rs.research_id,
+        rs.hru_reg_no,
+        rs.title,
+        rs.abstract_summary,
+        COALESCE(d.department_name, '') AS department_name,
+        COALESCE(st.status_name, 'Pending') AS status_name,
+        rs.created_at,
+        rs.updated_at,
+        rs.date_registered
+      FROM research_studies rs
+      LEFT JOIN department d ON d.department_id = rs.department_id
+      LEFT JOIN statuses st ON st.status_id = rs.current_status_id
+      WHERE ${roleName === "TRB" ? "COALESCE(st.status_name, 'Pending') IN ('Pending', 'Under Review', 'Forwarded to Reviewers')" : "COALESCE(st.status_name, 'Pending') = 'Forwarded to Reviewers'"}
+      ORDER BY rs.updated_at DESC, rs.created_at DESC
+    `;
+
+    const result = await pool.query(query);
+
+    const studies = result.rows.map((row) => ({
+      id: row.research_id,
+      hru: row.hru_reg_no || "",
+      title: row.title || "",
+      abstract: row.abstract_summary || "",
+      department: row.department_name || "",
+      status: row.status_name || "Pending",
+      dateCreated: row.created_at,
+      dateModified: row.updated_at,
+      dateRegistered: row.date_registered,
+    }));
+
+    res.json({ studies });
+  } catch (err) {
+    console.error("Assignments fetch error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// POST /api/studies/:id/trb-review
+router.post("/:id/trb-review", requireAuth, async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: "Invalid token payload" });
+  const roleName = normalizeRole(req.user?.role_name || await getUserRole(userId));
+  const researchId = Number.parseInt(req.params.id, 10);
+  const { status, remarks } = req.body;
+
+  if (!userId) return res.status(401).json({ error: "Invalid token payload" });
+  if (roleName !== "TRB") return res.status(403).json({ error: "Forbidden" });
+  if (!Number.isFinite(researchId)) return res.status(400).json({ error: "Invalid study id" });
+  if (!status || !String(status).trim()) return res.status(400).json({ error: "Status is required" });
+
+  try {
+    const studyResult = await pool.query(
+      `SELECT rs.research_id FROM research_studies rs WHERE rs.research_id = $1 LIMIT 1`,
+      [researchId]
+    );
+    if (studyResult.rows.length === 0) return res.status(404).json({ error: "Study not found" });
+
+    const targetStatus = normalizeTrbTargetStatus(status);
+    const targetStatusId = await getStatusId(targetStatus);
+    const trbStatusId = await getStatusId(String(status).trim());
+
+    await pool.query(
+      `
+      UPDATE research_studies
+      SET current_status_id = $1,
+          updated_at = NOW()
+      WHERE research_id = $2
+      `,
+      [targetStatusId, researchId]
+    );
+
+    await pool.query(
+      `
+      INSERT INTO trb_reviews (research_id, trb_user_id, trb_status, remarks)
+      VALUES ($1, $2, $3, $4)
+      `,
+      [researchId, userId, String(status).trim(), remarks || ""]
+    );
+
+    res.json({ success: true, status: targetStatus });
+  } catch (err) {
+    console.error("TRB review error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// POST /api/studies/:id/reviewer-review
+router.post("/:id/reviewer-review", requireAuth, async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: "Invalid token payload" });
+  const roleName = normalizeRole(req.user?.role_name || await getUserRole(userId));
+  const researchId = Number.parseInt(req.params.id, 10);
+  const { status, remarks } = req.body;
+
+  if (!userId) return res.status(401).json({ error: "Invalid token payload" });
+  if (roleName !== "Reviewer") return res.status(403).json({ error: "Forbidden" });
+  if (!Number.isFinite(researchId)) return res.status(400).json({ error: "Invalid study id" });
+  if (!status || !String(status).trim()) return res.status(400).json({ error: "Status is required" });
+
+  try {
+    const studyResult = await pool.query(
+      `
+      SELECT rs.research_id, COALESCE(st.status_name, 'Pending') AS status_name
+      FROM research_studies rs
+      LEFT JOIN statuses st ON st.status_id = rs.current_status_id
+      WHERE rs.research_id = $1
+      LIMIT 1
+      `,
+      [researchId]
+    );
+
+    if (studyResult.rows.length === 0) return res.status(404).json({ error: "Study not found" });
+    if (studyResult.rows[0].status_name !== "Forwarded to Reviewers") {
+      return res.status(403).json({ error: "This study is not ready for reviewer feedback" });
+    }
+
+    const targetStatus = normalizeReviewerTargetStatus(status);
+    const targetStatusId = await getStatusId(targetStatus);
+    const feedbackStatusId = await getStatusId(String(status).trim());
+
+    let assignmentId;
+    const assignmentResult = await pool.query(
+      `
+      SELECT assignment_id
+      FROM review_assignment
+      WHERE research_id = $1 AND reviewer_id = $2
+      LIMIT 1
+      `,
+      [researchId, userId]
+    );
+
+    if (assignmentResult.rows.length > 0) {
+      assignmentId = assignmentResult.rows[0].assignment_id;
+      await pool.query(
+        `UPDATE review_assignment SET assignment_status = 'Completed', date_completed = NOW() WHERE assignment_id = $1`,
+        [assignmentId]
+      );
+    } else {
+      const newAssignment = await pool.query(
+        `
+        INSERT INTO review_assignment (research_id, reviewer_id, assigned_by, date_assigned, assignment_status)
+        VALUES ($1, $2, $3, NOW(), 'Completed')
+        RETURNING assignment_id
+        `,
+        [researchId, userId, userId]
+      );
+      assignmentId = newAssignment.rows[0]?.assignment_id;
+    }
+
+    await pool.query(
+      `
+      INSERT INTO review_feedback (assignment_id, research_id, reviewer_id, feedback_status, remarks)
+      VALUES ($1, $2, $3, $4, $5)
+      `,
+      [assignmentId, researchId, userId, String(status).trim(), remarks || ""]
+    );
+
+    await pool.query(
+      `
+      UPDATE research_studies
+      SET current_status_id = $1,
+          updated_at = NOW()
+      WHERE research_id = $2
+      `,
+      [targetStatusId, researchId]
+    );
+
+    res.json({ success: true, status: targetStatus });
+  } catch (err) {
+    console.error("Reviewer review error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // GET /api/studies/:id
 router.get("/:id", requireAuth, async (req, res) => {
   const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: "Invalid token payload" });
+  const roleName = normalizeRole(req.user?.role_name || await getUserRole(userId));
   const researchId = Number.parseInt(req.params.id, 10);
 
   if (!userId) return res.status(401).json({ error: "Invalid token payload" });
   if (!Number.isFinite(researchId)) return res.status(400).json({ error: "Invalid study id" });
 
   try {
-    // Ensure user has access to this study (same rules as list)
+    // Ensure user has access to this study (same rules as list plus TRB/reviewer workflow access)
     const access = await pool.query(
       `
       SELECT 1
       FROM research_studies rs
       LEFT JOIN research_authors ra ON ra.research_id = rs.research_id AND ra.user_id = $2
+      LEFT JOIN statuses st ON st.status_id = rs.current_status_id
       WHERE rs.research_id = $1
-        AND (rs.created_by = $2 OR rs.corresponding_author_id = $2 OR ra.user_id = $2)
+        AND (
+          rs.created_by = $2
+          OR rs.corresponding_author_id = $2
+          OR ra.user_id = $2
+          OR ($3 = 'TRB' AND COALESCE(st.status_name, 'Pending') IN ('Pending', 'Under Review', 'Forwarded to Reviewers'))
+          OR ($3 = 'Reviewer' AND COALESCE(st.status_name, 'Pending') = 'Forwarded to Reviewers')
+        )
       LIMIT 1
       `,
-      [researchId, userId]
+      [researchId, userId, roleName]
     );
     if (access.rows.length === 0) return res.status(404).json({ error: "Study not found" });
 

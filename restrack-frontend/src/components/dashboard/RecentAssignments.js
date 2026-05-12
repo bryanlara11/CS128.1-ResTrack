@@ -5,11 +5,39 @@ import { useNavigate } from "react-router-dom";
 function RecentAssignments() {
   const navigate = useNavigate();
   const [studies, setStudies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("studies") || "[]");
-    const submitted = saved.filter((s) => s.status !== "Draft");
-    setStudies(submitted.slice(-3).reverse());
+    const fetchRecentAssignments = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Not logged in");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetch("http://localhost:5000/api/studies/assignments", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Failed to load assignments");
+
+        const studies = Array.isArray(data.studies) ? data.studies.slice(0, 3) : [];
+        setStudies(studies);
+      } catch (err) {
+        console.error("Failed to load recent assignments:", err);
+        setError(err.message || "Failed to load assignments");
+        setStudies([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentAssignments();
   }, []);
 
   const STATUS_CLASS = {
@@ -17,6 +45,7 @@ function RecentAssignments() {
     "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
     "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
     "For Modification":       { color: "#f97316", bg: "#ffedd5" },
+    "Forwarded to Reviewers": { color: "#8b5cf6", bg: "#ede9fe" },
     "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
   };
 
@@ -28,7 +57,11 @@ function RecentAssignments() {
       </div>
 
       <div className={styles.list}>
-        {studies.length === 0 ? (
+        {loading ? (
+          <p className={styles.empty}>Loading…</p>
+        ) : error ? (
+          <p className={styles.empty}>{error}</p>
+        ) : studies.length === 0 ? (
           <p className={styles.empty}>No recent assignments.</p>
         ) : (
           studies.map((study) => (

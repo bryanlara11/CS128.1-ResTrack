@@ -32,7 +32,9 @@ async function seed() {
       ('Pending'),
       ('Under Review'),
       ('Approved'),
-      ('For Revision')
+      ('For Revision'),
+      ('Forwarded to Reviewers'),
+      ('Disapproved')
     ON CONFLICT (status_name) DO NOTHING
   `);
   await pool.query(
@@ -86,8 +88,16 @@ async function seed() {
 
   for (const s of studies) {
     await pool.query(`
-      INSERT INTO research_studies (title, department_id, current_status_id, corresponding_author_id, adviser_id, created_by, date_registered)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      INSERT INTO research_studies (
+        title,
+        department_id,
+        trb_required,
+        current_status_id,
+        corresponding_author_id,
+        adviser_id,
+        created_by,
+        date_registered
+      ) VALUES ($1, $2, true, $3, $4, $5, $6, NOW())
     `, [s.title, s.dept, s.status, s.author, s.adviser, admin]);
   }
 

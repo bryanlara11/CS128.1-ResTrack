@@ -29,7 +29,9 @@ function Login() {
           navigate("/dashboardadmin");
         } else if (roleName === "Researcher") {
           navigate("/dashboardresearcher");
-        } else if (roleName === "Reviewer" || roleName === "TRB") {
+        } else if (roleName === "TRB") {
+          navigate("/dashboardtrb");
+        } else if (roleName === "Reviewer") {
           navigate("/dashboardreviewer");
         } else {
           navigate("/dashboardresearcher");

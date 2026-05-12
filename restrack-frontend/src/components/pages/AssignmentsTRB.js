@@ -57,10 +57,38 @@ function AssignmentsTRB() {
   const [studies, setStudies] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("studies") || "[]");
-    setStudies(saved.filter((s) => s.status !== "Draft"));
+    const fetchAssignments = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Not logged in");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetch("http://localhost:5000/api/studies/assignments", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Failed to load assignments");
+        const assignments = Array.isArray(data.studies) ? data.studies : [];
+        setStudies(assignments.filter((s) => s.status !== "Draft"));
+      } catch (err) {
+        console.error("Failed to fetch TRB assignments:", err);
+        setError(err.message || "Failed to load assignments");
+        setStudies([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssignments();
   }, []);
 
   const filtered = studies.filter((s) => {

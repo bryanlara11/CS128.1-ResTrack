@@ -28,10 +28,12 @@ function ReviewsContent({ study, onSubmitReview }) {
   const showModal = (message) => setModal({ show: true, message });
   const closeModal = () => setModal({ show: false, message: "" });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!reviewComment.trim()) { showModal("Please provide feedback comments."); return; }
-    onSubmitReview({ status: reviewStatus, feedback: reviewComment });
-    setSubmitted(true);
+    const success = await onSubmitReview({ status: reviewStatus, feedback: reviewComment });
+    if (success !== false) {
+      setSubmitted(true);
+    }
   };
 
   return (
@@ -272,46 +274,92 @@ function AssignedStudy() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Overview");
   const { id } = useParams();
-  const [studies, setStudies] = useState([]);
+  const [study, setStudy] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("studies") || "[]");
-    setStudies(saved);
-  }, []);
+    const fetchStudy = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
 
-  const study = studies.find((s) => s.id === Number(id));
-  const status = study ? STATUS_CONFIG.find((s) => s.key === study.status) : null;
-
-  const handleSubmitReview = (review) => {
-    const newReview = {
-      reviewer: "Reviewer",
-      status: review.status,
-      feedback: review.feedback,
-      date: new Date().toLocaleDateString(),
+      try {
+        const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          setStudy(null);
+          setLoading(false);
+          return;
+        }
+        const data = await res.json();
+        setStudy(data.study || null);
+      } catch (err) {
+        console.error("Failed to fetch reviewer study:", err);
+        setStudy(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const updated = studies.map((s) =>
-      s.id === Number(id)
-        ? {
-            ...s,
-            status: review.status,
-            reviews: [...(s.reviews || []), newReview],
-            history: [...(s.history || []), {
-              action: `Review submitted: ${review.status}`,
-              by: "Reviewer",
-              date: new Date().toLocaleDateString(),
-            }],
-          }
-        : s
-    );
+    fetchStudy();
+  }, [id]);
+  const status = study ? STATUS_CONFIG.find((s) => s.key === study.status) : null;
 
-    localStorage.setItem("studies", JSON.stringify(updated));
-    setStudies(updated);
+  const handleSubmitReview = async (review) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/studies/${id}/reviewer-review`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: review.status, remarks: review.feedback }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to submit review");
+
+      const updatedStudy = {
+        ...study,
+        status: data.status || review.status,
+        reviews: [
+          ...(study.reviews || []),
+          {
+            reviewer: "Reviewer",
+            status: review.status,
+            feedback: review.feedback,
+            date: new Date().toLocaleDateString(),
+          },
+        ],
+        history: [
+          ...(study.history || []),
+          {
+            action: `Review submitted: ${review.status}`,
+            by: "Reviewer",
+            date: new Date().toLocaleDateString(),
+          },
+        ],
+      };
+
+      setStudy(updatedStudy);
+      return true;
+    } catch (err) {
+      console.error("Reviewer review submission failed:", err);
+      return false;
+    }
   };
 
   return (
     <div className={styles.page}>
-      {!study ? (
+      {loading ? (
+        <p>Loading study...</p>
+      ) : !study ? (
         <p>Study not found.</p>
       ) : (
         <>

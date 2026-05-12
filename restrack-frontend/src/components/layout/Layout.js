@@ -15,7 +15,8 @@ function Layout() {
 
   const role = user.role_name; // "Admin", "Researcher", "Reviewer", "TRB"
 
-  const isReviewer = role === "Reviewer" || role === "TRB";
+  const isTRB = role === "TRB";
+  const isReviewer = role === "Reviewer";
   const isResearcher = role === "Researcher";
   const roleLabel = {
     Researcher: "Researcher",
@@ -45,7 +46,7 @@ function Layout() {
           <h2 className="nav-title">ResTrack</h2>
 
           <NavLink
-            to={isReviewer ? "/dashboardreviewer" : "/dashboardresearcher"}
+            to={isTRB ? "/dashboardtrb" : isReviewer ? "/dashboardreviewer" : "/dashboardresearcher"}
             className={({ isActive }) => isActive ? "navItem active" : "navItem"}
           >
             <i className="bi bi-square-half"></i>Dashboard

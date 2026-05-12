@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import styles from "./Assignments.module.css";
 
 const STATUS_CONFIG = [
-  { key: "Assigned",       label: "Assigned Studies", color: "#6366f1" },
-  { key: "Pending Review", label: "Pending Review",   color: "#f59e0b" },
-  { key: "Under Review",   label: "Under Review",     color: "#3b82f6" },
-  { key: "Completed",      label: "Completed",        color: "#10b981" },
+  { key: "Assigned",               label: "Assigned Studies",       color: "#6366f1" },
+  { key: "Pending Review",         label: "Pending Review",         color: "#f59e0b" },
+  { key: "Under Review",           label: "Under Review",           color: "#3b82f6" },
+  { key: "Forwarded to Reviewers", label: "Forwarded to Reviewers", color: "#8b5cf6" },
+  { key: "Completed",              label: "Completed",              color: "#10b981" },
 ];
 
 function AssignmentCard({ study }) {
@@ -56,10 +57,38 @@ function Assignments() {
   const [studies, setStudies] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("studies") || "[]");
-    setStudies(saved.filter((s) => s.status !== "Draft"));
+    const fetchAssignments = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Not logged in");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+        const res = await fetch("http://localhost:5000/api/studies/assignments", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Failed to load assignments");
+        const assignments = Array.isArray(data.studies) ? data.studies : [];
+        setStudies(assignments.filter((s) => s.status !== "Draft"));
+      } catch (err) {
+        console.error("Failed to fetch reviewer assignments:", err);
+        setError(err.message || "Failed to load assignments");
+        setStudies([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssignments();
   }, []);
 
   const filtered = studies.filter((s) => {
