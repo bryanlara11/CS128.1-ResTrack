@@ -13,6 +13,8 @@ import AssignedStudy from "./components/pages/AssignedStudy";
 import DashboardTRB from "./components/pages/DashboardTRB";
 import AssignmentsTRB from "./components/pages/AssignmentsTRB";
 import AssignedStudyTRB from "./components/pages/AssignedStudyTRB";
+import DashboardAdmin from "./pages/dashboardadmin";
+
 
 function App() {
   return (
@@ -35,6 +37,8 @@ function App() {
           <Route path="/dashboardtrb" element={<DashboardTRB />} />
           <Route path="/trb-chair/assignments" element={<AssignmentsTRB />} />
           <Route path="/trb-chair/assignments/:id" element={<AssignedStudyTRB />} />
+
+          <Route path="/dashboardadmin" element={<DashboardAdmin />} />
         </Route>
       </Routes>
     </BrowserRouter>
