@@ -2,17 +2,17 @@ import React, { useEffect, useState } from "react";
 import styles from "./StatusAdmin.module.css";
 
 const STATUSES = [
-  { key: "Total Studies",    label: "Total Studies",    color: "#6366f1" },
-  { key: "Total Users",      label: "Total Users",      color: "#10b981" },
-  { key: "Pending Reviews",  label: "Pending Reviews",  color: "#f59e0b" },
-  { key: "Approval Rate",    label: "Approval Rate",    color: "#3b82f6" },
+  { key: "Total Studies",       label: "Total Studies",       color: "#6366f1" },
+  { key: "Total Users",         label: "Total Users",         color: "#10b981" },
+  { key: "Pending Assignments", label: "Pending Assignments", color: "#f59e0b" },
+  { key: "Approval Rate",       label: "Approval Rate",       color: "#3b82f6" },
 ];
 
 function StatusAdmin() {
   const [counts, setCounts] = useState({
     "Total Studies": 0,
     "Total Users": 0,
-    "Pending Reviews": 0,
+    "Pending Assignments": 0,
     "Approval Rate": "0%",
   });
 
@@ -22,12 +22,25 @@ function StatusAdmin() {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      // Mock data for demo
+      const studies = JSON.parse(localStorage.getItem("studies") || "[]");
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+
+      const totalStudies = studies.filter((s) => s.status !== "Draft").length;
+      const totalUsers = users.length;
+      const pendingAssignments = studies.filter((s) => s.status !== "Draft" && !s.assignedTRB).length;
+
+      const completedStudies = studies.filter((s) =>
+        s.reviews?.some((r) => r.status === "Approved" || r.status === "TRB Approved" || r.status === "TRB Approved with Final Paper")
+      ).length;
+      const approvalRate = totalStudies > 0
+        ? `${Math.round((completedStudies / totalStudies) * 100)}%`
+        : "0%";
+
       setCounts({
-        "Total Studies": 1234,
-        "Total Users": 456,
-        "Pending Reviews": 23,
-        "Approval Rate": "89%",
+        "Total Studies": totalStudies,
+        "Total Users": totalUsers,
+        "Pending Assignments": pendingAssignments,
+        "Approval Rate": approvalRate,
       });
       setLoading(false);
       return;

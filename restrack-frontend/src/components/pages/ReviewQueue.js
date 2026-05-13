@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import styles from "./Assignments.module.css";
+import styles from "./ReviewQueue.module.css";
 
 const STATUS_CONFIG = [
-  { key: "Assigned",               label: "Assigned Studies",       color: "#6366f1" },
+  { key: "Draft",                  label: "Draft",                  color: "#6b7280" },
+  { key: "Assigned",               label: "Assigned",               color: "#6366f1" },
   { key: "Pending Review",         label: "Pending Review",         color: "#f59e0b" },
-  { key: "Under Review",           label: "Under Review",           color: "#3b82f6" },
   { key: "Forwarded to Reviewers", label: "Forwarded to Reviewers", color: "#8b5cf6" },
   { key: "Completed",              label: "Completed",              color: "#10b981" },
 ];
 
-function AssignmentCard({ study }) {
+function StudyCard({ study }) {
   const navigate = useNavigate();
   const status = STATUS_CONFIG.find((s) => s.key === study.status) || { color: "#6b7280" };
 
@@ -18,7 +18,7 @@ function AssignmentCard({ study }) {
     <div className={styles.studyCard}>
       <div className={styles.cardTop}>
         <span className={styles.studyTitle}>{study.title}</span>
-        <button className={styles.eyeButton} onClick={() => navigate(`/trb-chair/assignments/${study.id}`)}>
+        <button className={styles.eyeButton} onClick={() => navigate(`/admin/review-queue/${study.id}`)}>
           <i className="bi bi-eye"></i>
         </button>
       </div>
@@ -40,7 +40,7 @@ function AssignmentCard({ study }) {
         <span className={styles.dateModified}>Date Modified: {study.date}</span>
       </div>
 
-      {study.deadline && (() => {
+      {study.deadline && (study.assignedTRB || study.assignedReviewers?.reviewer1) && (() => {
         const daysLeft = Math.ceil((new Date(study.deadline) - new Date()) / (1000 * 60 * 60 * 24));
         const color = daysLeft < 0 ? "#ef4444" : daysLeft <= 3 ? "#f97316" : "#6b7280";
         return (
@@ -53,56 +53,24 @@ function AssignmentCard({ study }) {
   );
 }
 
-function AssignmentsTRB() {
+function ReviewQueue() {
   const [studies, setStudies] = useState([]);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchAssignments = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("Not logged in");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError("");
-        const res = await fetch("http://localhost:5000/api/studies/assignments", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Failed to load assignments");
-        const assignments = Array.isArray(data.studies) ? data.studies : [];
-        setStudies(assignments.filter((s) => s.status !== "Draft"));
-      } catch (err) {
-        console.error("Failed to fetch TRB assignments:", err);
-        setError(err.message || "Failed to load assignments");
-        setStudies([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAssignments();
+    const saved = JSON.parse(localStorage.getItem("studies") || "[]");
+    setStudies(saved);
   }, []);
 
-  const filtered = studies.filter((s) => {
-    const matchSearch =
-      s.title.toLowerCase().includes(search.toLowerCase()) ||
-      s.hru.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "All" || s.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  const filtered = studies.filter((s) =>
+    s.title.toLowerCase().includes(search.toLowerCase()) ||
+    s.hru.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h2 className={styles.heading}>ASSIGNMENTS</h2>
+        <h2 className={styles.heading}>REVIEW QUEUE</h2>
       </div>
 
       <div className={styles.filterRow}>
@@ -115,32 +83,19 @@ function AssignmentsTRB() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select
-          className={styles.statusDropdown}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="All">All Statuses</option>
-          {STATUS_CONFIG.map((s) => (
-            <option key={s.key} value={s.key}>{s.label}</option>
-          ))}
-        </select>
       </div>
 
       <div className={styles.list}>
-        {loading ? (
-          <p className={styles.empty}>Loading...</p>
-        ) : error ? (
-          <p className={styles.empty}>{error}</p>
-        ) : filtered.length > 0 ? (
+        {filtered.length > 0 ? (
           filtered.map((study) => (
-            <AssignmentCard key={study.id} study={study} />
+            <StudyCard key={study.id} study={study} />
           ))
         ) : (
-          <p className={styles.empty}>No assignments found.</p>
+          <p className={styles.empty}>No studies found.</p>
         )}
       </div>
     </div>
   );
 }
 
-export default AssignmentsTRB;
+export default ReviewQueue;

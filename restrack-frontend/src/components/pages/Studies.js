@@ -6,7 +6,7 @@ const STATUS_CONFIG = {
   "Approved":               { color: "#10b981", bg: "#d1fae5" },
   "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
   "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
-  "For Modification":       { color: "#f97316", bg: "#ffedd5" },
+  "For Major Modification":       { color: "#f97316", bg: "#ffedd5" },
   "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
 };
 

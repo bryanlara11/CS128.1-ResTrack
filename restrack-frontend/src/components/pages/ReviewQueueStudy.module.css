@@ -23,7 +23,7 @@
   flex: 1;
 }
 
-.editButton {
+.backButton {
   background: #374850;
   color: white;
   border: none;
@@ -52,21 +52,33 @@
   font-weight: 600;
 }
 
+.deadlineBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #555;
+  margin-bottom: 16px;
+  margin-left: 20px;
+}
+
+.deadlineSafe { color: #10b981; font-weight: 600; }
+.deadlineUrgent { color: #f97316; font-weight: 600; }
+.deadlineOverdue { color: #ef4444; font-weight: 600; }
+
 .hrudept {
   font-size: 0.85rem;
   color: #555;
 }
 
-.dot {
-  color: #ccc;
-}
+.dot { color: #ccc; }
 
 .subBox {
   border: 1px solid #374850;
   border-radius: 10px;
   overflow: hidden;
-  display: flex;        
-  flex-direction: row;  
+  display: flex;
+  flex-direction: row;
 }
 
 .tabSidebar {
@@ -190,25 +202,6 @@
 .authorMeta {
   font-size: 0.78rem;
   color: #888;
-}
-
-.docHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.uploadBtn {
-  background: #374850;
-  color: white;
-  padding: 7px 14px;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: "Inria Sans";
 }
 
 .docList {
@@ -347,4 +340,198 @@
   font-size: 0.85rem;
   color: #aaa;
   padding: 10px 0;
+}
+
+.assignBox {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.assignField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.assignLabel {
+  font-size: 0.78rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.warningMsg {
+  font-size: 0.85rem;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  background: #fef3c7;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.assignInput {
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-family: "Inria Sans", sans-serif;
+  font-size: 0.9rem;
+}
+
+.assignInput:focus {
+  outline: none;
+  border-color: #374850;
+}
+
+.assignSelect {
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-family: "Inria Sans", sans-serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.assignBtn {
+  background: #374850;
+  color: white;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: "Inria Sans", sans-serif;
+  font-size: 0.88rem;
+  align-self: flex-start;
+}
+
+.assignBtn:hover {
+  background: #2a3840;
+}
+
+.assignedLabel {
+  font-size: 0.85rem;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lockedMsg {
+  font-size: 0.85rem;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+.reviewerSlots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reviewerSlot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+}
+
+.slotLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374850;
+}
+
+.slotValue {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 28px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1a1a1a;
+}
+
+.modal p {
+  margin: 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.modalSlot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.cancelBtn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+  font-family: "Inria Sans", sans-serif;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.cancelBtn:hover {
+  background: #f0f0f0;
+}
+
+.confirmBtn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: none;
+  background: #374850;
+  color: white;
+  cursor: pointer;
+  font-family: "Inria Sans", sans-serif;
+  font-size: 0.9rem;
+}
+
+.confirmBtn:hover {
+  background: #2a3840;
 }

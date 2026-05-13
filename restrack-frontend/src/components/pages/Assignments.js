@@ -3,11 +3,10 @@ import { useNavigate } from "react-router-dom";
 import styles from "./Assignments.module.css";
 
 const STATUS_CONFIG = [
-  { key: "Assigned",               label: "Assigned Studies",       color: "#6366f1" },
-  { key: "Pending Review",         label: "Pending Review",         color: "#f59e0b" },
-  { key: "Under Review",           label: "Under Review",           color: "#3b82f6" },
-  { key: "Forwarded to Reviewers", label: "Forwarded to Reviewers", color: "#8b5cf6" },
-  { key: "Completed",              label: "Completed",              color: "#10b981" },
+  { key: "Assigned",       label: "Assigned Studies", color: "#6366f1" },
+  { key: "Pending Review", label: "Pending Review",   color: "#f59e0b" },
+  { key: "Under Review",   label: "Under Review",     color: "#3b82f6" },
+  { key: "Completed",      label: "Completed",        color: "#10b981" },
 ];
 
 function AssignmentCard({ study }) {
@@ -127,7 +126,11 @@ function Assignments() {
       </div>
 
       <div className={styles.list}>
-        {filtered.length > 0 ? (
+        {loading ? (
+          <p className={styles.empty}>Loading...</p>
+        ) : error ? (
+          <p className={styles.empty}>{error}</p>
+        ) : filtered.length > 0 ? (
           filtered.map((study) => (
             <AssignmentCard key={study.id} study={study} />
           ))

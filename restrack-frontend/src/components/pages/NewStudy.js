@@ -11,8 +11,6 @@ function NewStudy() {
   const [title, setTitle] = useState("");
   const [abstract, setAbstract] = useState("");
   const [studyFile, setStudyFile] = useState(null);
-  const deadline = new Date();
-  deadline.setDate(deadline.getDate() + 15);
 
   const savedUser = JSON.parse(localStorage.getItem("user") || "{}");
   const CURRENT_USER = useMemo(
@@ -187,18 +185,13 @@ function NewStudy() {
 
     const token = localStorage.getItem("token");
 
-    const deadlineDate = new Date();
-    deadlineDate.setDate(deadlineDate.getDate() + 15);
-    const deadlineStr = deadlineDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-
     if (!token) {
       const newStudy = {
         id: Date.now(),
         title,
         abstract,
         authorList: authors,
-        status: "Under Review",
-        deadline: deadlineStr,
+        status: "Pending Review",
         hru: `HRU-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`,
         department: authors[0]?.department || "—",
         submittedBy: authors[0]?.name || "—",
@@ -222,7 +215,6 @@ function NewStudy() {
       const payload = {
         title: title.trim(),
         abstract: abstract.trim(),
-        deadline: deadlineStr,
         authorIds: authors.map((author) => author.id).filter(Boolean),
         documents: studyFile
           ? [{ name: studyFile.name, fileType: studyFile.type || "" }]

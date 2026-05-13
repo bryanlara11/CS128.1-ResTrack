@@ -12,19 +12,18 @@ const STATUS_CONFIG = [
   { key: "Completed",              label: "Completed",              color: "#10b981" },
 ];
 
-function ReviewsContent({ study, onSubmitReview }) {
+function ReviewsContent({ study, onSubmitReview, onSaveDraft }) {
   const STATUS_COLORS = {
-    "Approved":               { color: "#10b981", bg: "#d1fae5" },
-    "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
-    "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
-    "For Major Modification": { color: "#f97316", bg: "#ffedd5" },
-    "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
-    "Forwarded to Reviewers": { color: "#8b5cf6", bg: "#ede9fe" },
+    "TRB Approved":                  { color: "#10b981", bg: "#d1fae5" },
+    "TRB Approved with Final Paper": { color: "#3b82f6", bg: "#dbeafe" },
+    "Retracted":                     { color: "#ef4444", bg: "#fee2e2" },
+    "Resigned":                      { color: "#6b7280", bg: "#f3f4f6" },
   };
 
-  const [reviewStatus, setReviewStatus] = useState("Pending");
-  const [reviewComment, setReviewComment] = useState("");
+  const [reviewStatus, setReviewStatus] = useState("TRB Approved");
+  const [reviewComment, setReviewComment] = useState(study.draftFeedback || "");
   const [submitted, setSubmitted] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
   const [modal, setModal] = useState({ show: false, message: "" });
 
   const showModal = (message) => setModal({ show: true, message });
@@ -33,9 +32,14 @@ function ReviewsContent({ study, onSubmitReview }) {
   const handleSubmit = async () => {
     if (!reviewComment.trim()) { showModal("Please provide feedback comments."); return; }
     const success = await onSubmitReview({ status: reviewStatus, feedback: reviewComment });
-    if (success !== false) {
-      setSubmitted(true);
-    }
+    if (success !== false) setSubmitted(true);
+  };
+
+  const handleSaveDraft = () => {
+    if (!reviewComment.trim()) { showModal("Please write something before saving a draft."); return; }
+    onSaveDraft({ feedback: reviewComment });
+    setDraftSaved(true);
+    setTimeout(() => setDraftSaved(false), 3000);
   };
 
   return (
@@ -43,7 +47,7 @@ function ReviewsContent({ study, onSubmitReview }) {
       <h4 className={styles.tabSectionTitle}>Past Reviews</h4>
       <div className={styles.reviewList}>
         {study.reviews?.length > 0 ? study.reviews.map((review, i) => {
-          const s = STATUS_COLORS[review.status] || STATUS_COLORS["Pending"];
+          const s = STATUS_COLORS[review.status] || { color: "#6b7280", bg: "#f3f4f6" };
           return (
             <div key={i} className={styles.reviewCard}>
               <div className={styles.reviewHeader}>
@@ -72,12 +76,10 @@ function ReviewsContent({ study, onSubmitReview }) {
               className={styles.reviewSelect}
               value={reviewStatus}
               onChange={(e) => setReviewStatus(e.target.value)}>
-              <option value="Approved">Approved</option>
-              <option value="For Minor Modification">For Minor Modification</option>
-              <option value="For Major Modification">For Major Modification</option>
-              <option value="Disapproved">Disapproved</option>
-              <option value="Pending">Pending</option>
-              <option value="Forwarded to Reviewers">Forwarded to Reviewers</option>
+              <option value="TRB Approved">TRB Approved</option>
+              <option value="TRB Approved with Final Paper">TRB Approved with Final Paper</option>
+              <option value="Retracted">Retracted</option>
+              <option value="Resigned">Resigned</option>
             </select>
           </div>
           <div className={styles.reviewFormField}>
@@ -89,9 +91,19 @@ function ReviewsContent({ study, onSubmitReview }) {
               onChange={(e) => setReviewComment(e.target.value)}
             />
           </div>
-          <button className={styles.reviewSubmitBtn} onClick={handleSubmit}>
-            Submit Review
-          </button>
+          {draftSaved && (
+            <div className={styles.draftSavedMsg}>
+              <i className="bi bi-check-circle"></i> Draft saved.
+            </div>
+          )}
+          <div className={styles.reviewFormActions}>
+            <button className={styles.draftBtn} onClick={handleSaveDraft}>
+              Save Draft
+            </button>
+            <button className={styles.reviewSubmitBtn} onClick={handleSubmit}>
+              Submit Review
+            </button>
+          </div>
         </div>
       )}
 
@@ -284,6 +296,9 @@ function AssignedStudyTRB() {
     const fetchStudy = async () => {
       const token = localStorage.getItem("token");
       if (!token) {
+        const saved = JSON.parse(localStorage.getItem("studies") || "[]");
+        const found = saved.find((s) => s.id === Number(id));
+        setStudy(found || null);
         setLoading(false);
         return;
       }
@@ -292,11 +307,7 @@ function AssignedStudyTRB() {
         const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) {
-          setStudy(null);
-          setLoading(false);
-          return;
-        }
+        if (!res.ok) { setStudy(null); setLoading(false); return; }
         const data = await res.json();
         setStudy(data.study || null);
       } catch (err) {
@@ -309,11 +320,37 @@ function AssignedStudyTRB() {
 
     fetchStudy();
   }, [id]);
+
   const status = study ? STATUS_CONFIG.find((s) => s.key === study.status) : null;
 
   const handleSubmitReview = async (review) => {
     const token = localStorage.getItem("token");
-    if (!token) return;
+
+    if (!token) {
+      const saved = JSON.parse(localStorage.getItem("studies") || "[]");
+      const updated = saved.map((s) =>
+        s.id === Number(id)
+          ? {
+              ...s,
+              draftFeedback: "",
+              reviews: [...(s.reviews || []), {
+                reviewer: "TRB Chair",
+                status: review.status,
+                feedback: review.feedback,
+                date: new Date().toLocaleDateString(),
+              }],
+              history: [...(s.history || []), {
+                action: `Review submitted: ${review.status}`,
+                by: "TRB Chair",
+                date: new Date().toLocaleDateString(),
+              }],
+            }
+          : s
+      );
+      localStorage.setItem("studies", JSON.stringify(updated));
+      setStudy(updated.find((s) => s.id === Number(id)));
+      return true;
+    }
 
     try {
       const res = await fetch(`http://localhost:5000/api/studies/${id}/trb-review`, {
@@ -328,33 +365,50 @@ function AssignedStudyTRB() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Failed to submit TRB review");
 
-      const updatedStudy = {
+      setStudy({
         ...study,
-        status: data.status || review.status,
-        reviews: [
-          ...(study.reviews || []),
-          {
-            reviewer: "TRB Chair",
-            status: review.status,
-            feedback: review.feedback,
-            date: new Date().toLocaleDateString(),
-          },
-        ],
-        history: [
-          ...(study.history || []),
-          {
-            action: `Review submitted: ${review.status}`,
-            by: "TRB Chair",
-            date: new Date().toLocaleDateString(),
-          },
-        ],
-      };
-
-      setStudy(updatedStudy);
+        draftFeedback: "",
+        reviews: [...(study.reviews || []), {
+          reviewer: "TRB Chair",
+          status: review.status,
+          feedback: review.feedback,
+          date: new Date().toLocaleDateString(),
+        }],
+        history: [...(study.history || []), {
+          action: `Review submitted: ${review.status}`,
+          by: "TRB Chair",
+          date: new Date().toLocaleDateString(),
+        }],
+      });
       return true;
     } catch (err) {
       console.error("TRB review submission failed:", err);
       return false;
+    }
+  };
+
+  const handleSaveDraft = (draft) => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      const saved = JSON.parse(localStorage.getItem("studies") || "[]");
+      const updated = saved.map((s) =>
+        s.id === Number(id)
+          ? {
+              ...s,
+              status: "Under Review",
+              draftFeedback: draft.feedback,
+              history: [...(s.history || []), {
+                action: "Review draft saved",
+                by: "TRB Chair",
+                date: new Date().toLocaleDateString(),
+              }],
+            }
+          : s
+      );
+      localStorage.setItem("studies", JSON.stringify(updated));
+      setStudy(updated.find((s) => s.id === Number(id)));
+      return;
     }
   };
 
@@ -415,7 +469,7 @@ function AssignedStudyTRB() {
             </div>
 
             <div className={styles.tabContent}>
-              {activeTab === "Reviews" && <ReviewsContent study={study} onSubmitReview={handleSubmitReview} />}
+              {activeTab === "Reviews" && <ReviewsContent study={study} onSubmitReview={handleSubmitReview} onSaveDraft={handleSaveDraft} />}
               {activeTab === "Overview" && <OverviewContent study={study} />}
               {activeTab === "Authors" && <AuthorsContent study={study} />}
               {activeTab === "Documents" && <DocumentsContent study={study} />}

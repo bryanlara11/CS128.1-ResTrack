@@ -14,7 +14,9 @@ import DashboardTRB from "./components/pages/DashboardTRB";
 import AssignmentsTRB from "./components/pages/AssignmentsTRB";
 import AssignedStudyTRB from "./components/pages/AssignedStudyTRB";
 import DashboardAdmin from "./components/pages/DashboardAdmin";
-
+import ManageUsers from "./components/pages/ManageUsers";
+import ReviewQueue from "./components/pages/ReviewQueue";
+import ReviewQueueStudy from "./components/pages/ReviewQueueStudy";
 
 function App() {
   return (
@@ -39,6 +41,9 @@ function App() {
           <Route path="/trb-chair/assignments/:id" element={<AssignedStudyTRB />} />
 
           <Route path="/dashboardadmin" element={<DashboardAdmin />} />
+          <Route path="/admin/manage-users" element={<ManageUsers />} />
+          <Route path="/admin/review-queue" element={<ReviewQueue />} />
+          <Route path="/admin/review-queue/:id" element={<ReviewQueueStudy />} />
         </Route>
       </Routes>
     </BrowserRouter>

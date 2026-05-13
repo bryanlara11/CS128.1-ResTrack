@@ -13,11 +13,13 @@ function Layout() {
     ? `${user.first_name} ${user.last_name}`
     : "User";
 
-  const role = user.role_name; // "Admin", "Researcher", "Reviewer", "TRB"
+  const role = user.role_name;
 
   const isTRB = role === "TRB";
   const isReviewer = role === "Reviewer";
   const isResearcher = role === "Researcher";
+  const isAdmin = role === "Admin";
+
   const roleLabel = {
     Researcher: "Researcher",
     Reviewer: "Reviewer",
@@ -25,12 +27,15 @@ function Layout() {
     Admin: "Admin",
   }[role] || "User";
 
-  // Dummy Notifications
   const [notifications, setNotifications] = useState([
     { id: 1, message: "Your study HRU-2026-001 has been sent for review.", date: "Apr 25, 2026" },
     { id: 2, message: "Dr. Santos left feedback on your study.", date: "Apr 24, 2026" },
     { id: 3, message: "Your study has been approved.", date: "Apr 20, 2026" },
   ]);
+
+  const deleteNotif = (id) => {
+    setNotifications(notifications.filter((n) => n.id !== id));
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -46,7 +51,12 @@ function Layout() {
           <h2 className="nav-title">ResTrack</h2>
 
           <NavLink
-            to={isTRB ? "/dashboardtrb" : isReviewer ? "/dashboardreviewer" : "/dashboardresearcher"}
+            to={
+              isAdmin ? "/dashboardadmin" :
+              isTRB ? "/dashboardtrb" :
+              isReviewer ? "/dashboardreviewer" :
+              "/dashboardresearcher"
+            }
             className={({ isActive }) => isActive ? "navItem active" : "navItem"}
           >
             <i className="bi bi-square-half"></i>Dashboard
@@ -62,6 +72,23 @@ function Layout() {
             <NavLink to="/assignments" className={({ isActive }) => isActive ? "navItem active" : "navItem"}>
               <i className="bi bi-clipboard-check"></i>Assignments
             </NavLink>
+          )}
+
+          {isTRB && (
+            <NavLink to="/trb-chair/assignments" className={({ isActive }) => isActive ? "navItem active" : "navItem"}>
+              <i className="bi bi-clipboard-check"></i>Assignments
+            </NavLink>
+          )}
+
+          {isAdmin && (
+            <>
+              <NavLink to="/admin/manage-users" className={({ isActive }) => isActive ? "navItem active" : "navItem"}>
+                <i className="bi bi-people"></i>Manage Users
+              </NavLink>
+              <NavLink to="/admin/review-queue" className={({ isActive }) => isActive ? "navItem active" : "navItem"}>
+                <i className="bi bi-journals"></i>Review Queue
+              </NavLink>
+            </>
           )}
         </div>
 
@@ -88,8 +115,13 @@ function Layout() {
                 </div>
                 {notifications.length > 0 ? notifications.map((n) => (
                   <div key={n.id} className="notifItem">
-                    <p className="notifMessage">{n.message}</p>
-                    <span className="notifDate">{n.date}</span>
+                    <div className="notifItemContent">
+                      <p className="notifMessage">{n.message}</p>
+                      <span className="notifDate">{n.date}</span>
+                    </div>
+                    <button className="notifDelete" onClick={() => deleteNotif(n.id)}>
+                      <i className="bi bi-x"></i>
+                    </button>
                   </div>
                 )) : (
                   <p className="notifEmpty">No notifications.</p>

@@ -11,7 +11,7 @@ const STATUS_CONFIG = [
   { key: "Completed",      label: "Completed",        color: "#10b981" },
 ];
 
-function ReviewsContent({ study, onSubmitReview }) {
+function ReviewsContent({ study, onSubmitReview, onSaveDraft, reviewerRole }) {
   const STATUS_COLORS = {
     "Approved":               { color: "#10b981", bg: "#d1fae5" },
     "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
@@ -21,27 +21,46 @@ function ReviewsContent({ study, onSubmitReview }) {
   };
 
   const [reviewStatus, setReviewStatus] = useState("Pending");
-  const [reviewComment, setReviewComment] = useState("");
+  const [reviewComment, setReviewComment] = useState(study.draftFeedback || "");
   const [submitted, setSubmitted] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
   const [modal, setModal] = useState({ show: false, message: "" });
 
   const showModal = (message) => setModal({ show: true, message });
   const closeModal = () => setModal({ show: false, message: "" });
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!reviewComment.trim()) { showModal("Please provide feedback comments."); return; }
-    const success = await onSubmitReview({ status: reviewStatus, feedback: reviewComment });
-    if (success !== false) {
-      setSubmitted(true);
-    }
+    onSubmitReview({ status: reviewStatus, feedback: reviewComment });
+    setSubmitted(true);
   };
+
+  const handleSaveDraft = () => {
+    if (!reviewComment.trim()) { showModal("Please write something before saving a draft."); return; }
+    onSaveDraft({ feedback: reviewComment });
+    setDraftSaved(true);
+    setTimeout(() => setDraftSaved(false), 3000);
+  };
+
+  const roleLabel = {
+    reviewer1: "Reviewer 1",
+    reviewer2: "Reviewer 2",
+    plagiarism: "Plagiarism Reviewer",
+  }[reviewerRole];
 
   return (
     <div className={styles.tabSection}>
+
+      {roleLabel && (
+        <div className={styles.reviewerRoleBadge}>
+          <i className="bi bi-person-badge"></i> You are assigned as: <strong>{roleLabel}</strong>
+        </div>
+      )}
+
       <h4 className={styles.tabSectionTitle}>Past Reviews</h4>
       <div className={styles.reviewList}>
         {study.reviews?.length > 0 ? study.reviews.map((review, i) => {
-          const s = STATUS_COLORS[review.status] || STATUS_COLORS["Pending"];
+          const s = STATUS_COLORS[review.status] || { color: "#6b7280", bg: "#f3f4f6" };
           return (
             <div key={i} className={styles.reviewCard}>
               <div className={styles.reviewHeader}>
@@ -86,9 +105,19 @@ function ReviewsContent({ study, onSubmitReview }) {
               onChange={(e) => setReviewComment(e.target.value)}
             />
           </div>
-          <button className={styles.reviewSubmitBtn} onClick={handleSubmit}>
-            Submit Review
-          </button>
+          {draftSaved && (
+            <div className={styles.draftSavedMsg}>
+              <i className="bi bi-check-circle"></i> Draft saved.
+            </div>
+          )}
+          <div className={styles.reviewFormActions}>
+            <button className={styles.draftBtn} onClick={handleSaveDraft}>
+              Save Draft
+            </button>
+            <button className={styles.reviewSubmitBtn} onClick={handleSubmit}>
+              Submit Review
+            </button>
+          </div>
         </div>
       )}
 
@@ -274,92 +303,92 @@ function AssignedStudy() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Overview");
   const { id } = useParams();
-  const [study, setStudy] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [studies, setStudies] = useState([]);
+
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userId = String(user.id);
 
   useEffect(() => {
-    const fetchStudy = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+    const saved = JSON.parse(localStorage.getItem("studies") || "[]");
+    setStudies(saved);
+  }, []);
 
-      try {
-        const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) {
-          setStudy(null);
-          setLoading(false);
-          return;
-        }
-        const data = await res.json();
-        setStudy(data.study || null);
-      } catch (err) {
-        console.error("Failed to fetch reviewer study:", err);
-        setStudy(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStudy();
-  }, [id]);
+  const study = studies.find((s) => s.id === Number(id));
   const status = study ? STATUS_CONFIG.find((s) => s.key === study.status) : null;
 
-  const handleSubmitReview = async (review) => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+  const getReviewerRole = () => {
+    if (!study?.assignedReviewers) return null;
+    const { reviewer1, reviewer2, plagiarism } = study.assignedReviewers;
+    if (String(reviewer1) === userId) return "reviewer1";
+    if (String(reviewer2) === userId) return "reviewer2";
+    if (String(plagiarism) === userId) return "plagiarism";
+    return null;
+  };
 
-    try {
-      const res = await fetch(`http://localhost:5000/api/studies/${id}/reviewer-review`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: review.status, remarks: review.feedback }),
-      });
+  const reviewerRole = getReviewerRole();
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Failed to submit review");
+  const handleSubmitReview = (review) => {
+    const roleLabel = {
+      reviewer1: "Reviewer 1",
+      reviewer2: "Reviewer 2",
+      plagiarism: "Plagiarism Reviewer",
+    }[reviewerRole] || "Reviewer";
 
-      const updatedStudy = {
-        ...study,
-        status: data.status || review.status,
-        reviews: [
-          ...(study.reviews || []),
-          {
-            reviewer: "Reviewer",
-            status: review.status,
-            feedback: review.feedback,
-            date: new Date().toLocaleDateString(),
-          },
-        ],
-        history: [
-          ...(study.history || []),
-          {
-            action: `Review submitted: ${review.status}`,
-            by: "Reviewer",
-            date: new Date().toLocaleDateString(),
-          },
-        ],
-      };
+    const newReview = {
+      reviewer: roleLabel,
+      status: review.status,
+      feedback: review.feedback,
+      date: new Date().toLocaleDateString(),
+    };
 
-      setStudy(updatedStudy);
-      return true;
-    } catch (err) {
-      console.error("Reviewer review submission failed:", err);
-      return false;
-    }
+    const updated = studies.map((s) =>
+      s.id === Number(id)
+        ? {
+            ...s,
+            draftFeedback: "",
+            reviews: [...(s.reviews || []), newReview],
+            history: [...(s.history || []), {
+              action: `Review submitted: ${review.status}`,
+              by: roleLabel,
+              date: new Date().toLocaleDateString(),
+            }],
+          }
+        : s
+    );
+
+    localStorage.setItem("studies", JSON.stringify(updated));
+    setStudies(updated);
+  };
+
+  const handleSaveDraft = (draft) => {
+    const roleLabel = {
+      reviewer1: "Reviewer 1",
+      reviewer2: "Reviewer 2",
+      plagiarism: "Plagiarism Reviewer",
+    }[reviewerRole] || "Reviewer";
+
+    const updated = studies.map((s) =>
+      s.id === Number(id)
+        ? {
+            ...s,
+            status: "Under Review",
+            draftFeedback: draft.feedback,
+            history: [...(s.history || []), {
+              action: "Review draft saved",
+              by: roleLabel,
+              date: new Date().toLocaleDateString(),
+            }],
+          }
+        : s
+    );
+
+    localStorage.setItem("studies", JSON.stringify(updated));
+    setStudies(updated);
   };
 
   return (
     <div className={styles.page}>
-      {loading ? (
-        <p>Loading study...</p>
-      ) : !study ? (
+      {!study ? (
         <p>Study not found.</p>
       ) : (
         <>
@@ -412,7 +441,7 @@ function AssignedStudy() {
             </div>
 
             <div className={styles.tabContent}>
-              {activeTab === "Reviews" && <ReviewsContent study={study} onSubmitReview={handleSubmitReview} />}
+              {activeTab === "Reviews" && <ReviewsContent study={study} onSubmitReview={handleSubmitReview} onSaveDraft={handleSaveDraft} reviewerRole={reviewerRole} />}
               {activeTab === "Overview" && <OverviewContent study={study} />}
               {activeTab === "Authors" && <AuthorsContent study={study} />}
               {activeTab === "Documents" && <DocumentsContent study={study} />}
