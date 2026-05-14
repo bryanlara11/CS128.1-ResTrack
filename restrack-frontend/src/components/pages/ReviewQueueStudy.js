@@ -26,9 +26,25 @@ function AssignmentsContent({ study, onAssign, onSaveRegistration }) {
   const trbHasReviewed = study.reviews?.some((r) => r.reviewer === "TRB Chair");
 
   useEffect(() => {
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    setTrbUsers(users.filter((u) => u.role_name === "TRB"));
-    setReviewerUsers(users.filter((u) => u.role_name === "Reviewer"));
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("http://localhost:5000/api/users", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (response.ok) {
+          const allUsers = data.users || [];
+          setTrbUsers(allUsers.filter((u) => u.role_name === "TRB"));
+          setReviewerUsers(allUsers.filter((u) => u.role_name === "Reviewer"));
+        } else {
+          console.error("Failed to fetch users", data);
+        }
+      } catch (err) {
+        console.error("Error fetching users", err);
+      }
+    };
+    fetchUsers();
   }, []);
 
   const handleSaveRegistration = () => {
