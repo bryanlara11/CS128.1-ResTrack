@@ -25,13 +25,24 @@ function ManageUsers() {
   const [noticeModal, setNoticeModal] = useState({ show: false, message: "" });
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("users") || "[]");
-    setUsers(saved);
+    fetchUsers();
   }, []);
 
-  const saveUsers = (updated) => {
-    localStorage.setItem("users", JSON.stringify(updated));
-    setUsers(updated);
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:5000/api/users", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setUsers(data.users || []);
+      } else {
+        console.error("Failed to fetch users", data);
+      }
+    } catch (err) {
+      console.error("Error fetching users", err);
+    }
   };
 
   const openCreate = () => {
@@ -60,22 +71,40 @@ function ManageUsers() {
     setForm({ ...EMPTY_FORM });
   };
 
-  const handleSave = () => {
-    if (!form.first_name.trim()) { setNoticeModal({ show: true, message: "First name is required." }); return; }
-    if (!form.last_name.trim()) { setNoticeModal({ show: true, message: "Last name is required." }); return; }
-    if (!form.email.trim()) { setNoticeModal({ show: true, message: "Email is required." }); return; }
+  const handleSave = async () => {
+    if (!form.first_name?.trim()) { setNoticeModal({ show: true, message: "First name is required." }); return; }
+    if (!form.last_name?.trim()) { setNoticeModal({ show: true, message: "Last name is required." }); return; }
+    if (!form.email?.trim()) { setNoticeModal({ show: true, message: "Email is required." }); return; }
 
+    const token = localStorage.getItem("token");
     if (isEditMode) {
-      const updated = users.map((u) =>
-        u.id === selectedUser.id ? { ...u, ...form } : u
-      );
-      saveUsers(updated);
+      try {
+        const response = await fetch(`http://localhost:5000/api/users/${selectedUser.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            first_name: form.first_name,
+            last_name: form.last_name,
+            role_name: form.role_name,
+            department: form.department
+          })
+        });
+
+        if (response.ok) {
+          fetchUsers();
+        } else {
+          setNoticeModal({ show: true, message: "Failed to update user." });
+        }
+      } catch (err) {
+        console.error("Error updating user", err);
+        setNoticeModal({ show: true, message: "Server error." });
+      }
     } else {
-      const newUser = {
-        id: Date.now(),
-        ...form,
-      };
-      saveUsers([...users, newUser]);
+      // For now, new users should sign up through the signup page
+      setNoticeModal({ show: true, message: "To add a new user, please use the Signup page." });
     }
 
     closeModal();
@@ -85,9 +114,24 @@ function ManageUsers() {
     setConfirmModal({ show: true, userId });
   };
 
-  const confirmDelete = () => {
-    const updated = users.filter((u) => u.id !== confirmModal.userId);
-    saveUsers(updated);
+  const confirmDelete = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:5000/api/users/${confirmModal.userId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        fetchUsers();
+        setNoticeModal({ show: true, message: "User successfully deleted." });
+      } else {
+        setNoticeModal({ show: true, message: "Failed to delete user." });
+      }
+    } catch (err) {
+      console.error("Error deleting user", err);
+      setNoticeModal({ show: true, message: "Server error." });
+    }
     setConfirmModal({ show: false, userId: null });
   };
 
@@ -132,7 +176,7 @@ function ManageUsers() {
         {filtered.length > 0 ? filtered.map((user) => (
           <div key={user.id} className={styles.userCard}>
             <div className={styles.userAvatar}>
-              {user.first_name.charAt(0)}{user.last_name.charAt(0)}
+              {(user.first_name || " ").charAt(0)}{(user.last_name || " ").charAt(0)}
             </div>
             <div className={styles.userInfo}>
               <span className={styles.userName}>{user.first_name} {user.last_name}</span>
@@ -140,7 +184,7 @@ function ManageUsers() {
               <span className={styles.userDept}>{user.department || "No department"}</span>
             </div>
             <div className={styles.userRole}>
-              <span className={styles.roleChip}>{user.role_name === "TRB" ? "TRB Chair" : user.role_name}</span>
+              <span className={styles.roleChip}>{user.role_name === "TRB" ? "TRB Chair" : (user.role_name && user.role_name !== "None" ? user.role_name : "No Role")}</span>
             </div>
             <div className={styles.userActions}>
               <button className={styles.editBtn} onClick={() => openEdit(user)}>
@@ -165,7 +209,7 @@ function ManageUsers() {
                 <label>First Name *</label>
                 <input
                   className={styles.input}
-                  value={form.first_name}
+                  value={form.first_name || ""}
                   onChange={(e) => setForm({ ...form, first_name: e.target.value })}
                 />
               </div>
@@ -173,7 +217,7 @@ function ManageUsers() {
                 <label>Last Name *</label>
                 <input
                   className={styles.input}
-                  value={form.last_name}
+                  value={form.last_name || ""}
                   onChange={(e) => setForm({ ...form, last_name: e.target.value })}
                 />
               </div>
@@ -181,8 +225,10 @@ function ManageUsers() {
                 <label>Email *</label>
                 <input
                   className={styles.input}
-                  value={form.email}
+                  value={form.email || ""}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  readOnly={isEditMode}
+                  style={isEditMode ? { backgroundColor: '#f0f0f0', color: '#666' } : {}}
                 />
               </div>
               <div className={styles.formField}>

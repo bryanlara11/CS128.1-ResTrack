@@ -152,9 +152,9 @@ CREATE TABLE IF NOT EXISTS review_assignment (
     assignment_status VARCHAR(50)
 );
 
--- ============================================
+
 -- Review Feedback
--- ============================================
+
 
 CREATE TABLE IF NOT EXISTS review_feedback (
     feedback_id     SERIAL PRIMARY KEY,
@@ -167,9 +167,9 @@ CREATE TABLE IF NOT EXISTS review_feedback (
     feedback_date   TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- ============================================
+
 -- TRB Reviews
--- ============================================
+
 
 CREATE TABLE IF NOT EXISTS trb_reviews (
     trb_review_id SERIAL PRIMARY KEY,
@@ -180,9 +180,9 @@ CREATE TABLE IF NOT EXISTS trb_reviews (
     review_date   TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- ============================================
+
 -- Revision History
--- ============================================
+
 
 CREATE TABLE IF NOT EXISTS revision_history (
     revision_id      SERIAL PRIMARY KEY,
@@ -195,9 +195,9 @@ CREATE TABLE IF NOT EXISTS revision_history (
     revision_cycle_no INTEGER NOT NULL DEFAULT 1
 );
 
--- ============================================
+
 -- Notification
--- ============================================
+
 
 CREATE TABLE IF NOT EXISTS notifications (
     notification_id SERIAL PRIMARY KEY,
@@ -208,9 +208,9 @@ CREATE TABLE IF NOT EXISTS notifications (
     date_sent       TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- ============================================
+
 -- Bioinformatics
--- ============================================
+
 
 CREATE TABLE IF NOT EXISTS bioinformatics (
     bioinfo_id  SERIAL PRIMARY KEY,
