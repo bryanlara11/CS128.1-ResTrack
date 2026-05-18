@@ -110,15 +110,24 @@ router.get("/trb/stats", requireAuth, async (req, res) => {
     const result = await pool.query(
       `
       SELECT
-        COUNT(*) FILTER (WHERE COALESCE(st.status_name, 'Pending') IN ('Pending', 'Under Review', 'Forwarded to Reviewers', 'For Revision')) AS assigned,
+        COUNT(*) FILTER (WHERE COALESCE(st.status_name, 'Pending') IN ('Pending', 'Under Review', 'For Revision')) AS assigned,
         COUNT(*) FILTER (WHERE COALESCE(st.status_name, 'Pending') IN ('Pending', 'For Revision')) AS "Pending Review",
         COUNT(*) FILTER (WHERE COALESCE(st.status_name, 'Pending') = 'Under Review') AS "Under Review",
         COUNT(*) FILTER (WHERE COALESCE(st.status_name, 'Pending') = 'Forwarded to Reviewers') AS "Forwarded to Reviewers",
         COUNT(*) FILTER (WHERE COALESCE(st.status_name, 'Pending') IN ('Approved', 'Disapproved')) AS "Completed"
       FROM research_studies rs
       LEFT JOIN statuses st ON st.status_id = rs.current_status_id
-      WHERE COALESCE(rs.trb_required, false) = true
-      `
+      JOIN (
+        SELECT DISTINCT ON (research_id)
+          research_id,
+          trb_status
+        FROM trb_reviews
+        WHERE trb_user_id = $1
+        ORDER BY research_id, review_date DESC, trb_review_id DESC
+      ) tr ON tr.research_id = rs.research_id
+      WHERE tr.trb_status NOT IN ('TRB Approved', 'TRB Approved with Final Paper', 'Disapproved')
+      `,
+      [userId]
     );
 
     const row = result.rows[0] || {};
@@ -151,14 +160,24 @@ router.get("/reviewer/stats", requireAuth, async (req, res) => {
     const result = await pool.query(
       `
       SELECT
-        COUNT(*) FILTER (WHERE ra.date_completed IS NULL) AS assigned,
-        COUNT(*) FILTER (WHERE ra.date_completed IS NULL AND COALESCE(st.status_name, 'Pending') IN ('Pending', 'For Revision')) AS "Pending Review",
-        COUNT(*) FILTER (WHERE ra.date_completed IS NULL AND COALESCE(st.status_name, 'Pending') IN ('Under Review', 'Forwarded to Reviewers')) AS "Under Review",
+        COUNT(*) FILTER (WHERE ra.date_completed IS NULL AND COALESCE(st.status_name, 'Pending') IN ('Forwarded to Reviewers', 'Under Review')) AS assigned,
+        COUNT(*) FILTER (WHERE ra.date_completed IS NULL AND COALESCE(st.status_name, 'Pending') = 'Forwarded to Reviewers') AS "Pending Review",
+        COUNT(*) FILTER (WHERE ra.date_completed IS NULL AND COALESCE(st.status_name, 'Pending') = 'Under Review') AS "Under Review",
         COUNT(*) FILTER (WHERE ra.date_completed IS NOT NULL) AS "Completed"
       FROM review_assignment ra
       LEFT JOIN research_studies rs ON rs.research_id = ra.research_id
       LEFT JOIN statuses st ON st.status_id = rs.current_status_id
+      JOIN LATERAL (
+        SELECT trb_status
+        FROM trb_reviews
+        WHERE research_id = ra.research_id
+        ORDER BY review_date DESC, trb_review_id DESC
+        LIMIT 1
+      ) tr ON TRUE
       WHERE ra.reviewer_id = $1
+        AND ra.date_completed IS NULL
+        AND COALESCE(st.status_name, 'Pending') IN ('Forwarded to Reviewers', 'Under Review')
+        AND tr.trb_status NOT IN ('Assigned', 'Pending', 'For Revision', 'Disapproved')
       `,
       [userId]
     );
@@ -190,8 +209,8 @@ router.get("/admin/stats", requireAuth, async (req, res) => {
     }
 
     const totalStudiesRes = await pool.query("SELECT COUNT(*)::int AS count FROM research_studies");
-    const totalUsersRes = await pool.query("SELECT COUNT(*)::int AS count FROM users");
-    const pendingReviewsRes = await pool.query(
+    const totalUsersRes = await pool.query("SELECT COUNT(*)::int AS count FROM users WHERE is_active = TRUE");
+    const pendingAssignmentsRes = await pool.query(
       "SELECT COUNT(*)::int AS count FROM review_assignment WHERE date_completed IS NULL"
     );
     const approvedRes = await pool.query(
@@ -211,7 +230,7 @@ router.get("/admin/stats", requireAuth, async (req, res) => {
       counts: {
         "Total Studies": totalStudies,
         "Total Users": totalUsersRes.rows[0]?.count ?? 0,
-        "Pending Reviews": pendingReviewsRes.rows[0]?.count ?? 0,
+        "Pending Assignments": pendingAssignmentsRes.rows[0]?.count ?? 0,
         "Approval Rate": approvalRate,
       },
     });

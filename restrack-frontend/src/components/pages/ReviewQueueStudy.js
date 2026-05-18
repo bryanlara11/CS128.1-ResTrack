@@ -422,30 +422,54 @@ function ReviewQueueStudy() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Assignments");
   const { id } = useParams();
-  const [studies, setStudies] = useState([]);
+  const [study, setStudy] = useState(null);
+  
+  const fetchStudy = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.study) {
+        setStudy(data.study);
+      }
+    } catch (err) {
+      console.error("Error fetching study:", err);
+    }
+  };
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("studies") || "[]");
-    setStudies(saved);
-  }, []);
+    fetchStudy();
+  }, [id]);
 
-  const study = studies.find((s) => s.id === Number(id));
   const status = study ? STATUS_CONFIG.find((s) => s.key === study.status) : null;
 
+  const updateBackend = async (payload) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:5000/api/studies/${id}/admin-update`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        fetchStudy();
+      }
+    } catch (err) {
+      console.error("Update error:", err);
+    }
+  };
+
   const handleAssign = (assignmentData) => {
-    const updated = studies.map((s) =>
-      s.id === Number(id) ? { ...s, ...assignmentData } : s
-    );
-    localStorage.setItem("studies", JSON.stringify(updated));
-    setStudies(updated);
+    updateBackend(assignmentData);
   };
 
   const handleSaveRegistration = (registrationData) => {
-    const updated = studies.map((s) =>
-      s.id === Number(id) ? { ...s, ...registrationData } : s
-    );
-    localStorage.setItem("studies", JSON.stringify(updated));
-    setStudies(updated);
+    updateBackend(registrationData);
   };
 
   return (

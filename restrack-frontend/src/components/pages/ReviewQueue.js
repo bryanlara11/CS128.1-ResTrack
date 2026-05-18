@@ -58,8 +58,21 @@ function ReviewQueue() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("studies") || "[]");
-    setStudies(saved);
+    const fetchStudies = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:5000/api/studies/my", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok && data.studies) {
+          setStudies(data.studies);
+        }
+      } catch (err) {
+        console.error("Error fetching studies:", err);
+      }
+    };
+    fetchStudies();
   }, []);
 
   const filtered = studies.filter((s) =>

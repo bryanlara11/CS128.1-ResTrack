@@ -303,22 +303,38 @@ function AssignedStudy() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Overview");
   const { id } = useParams();
-  const [studies, setStudies] = useState([]);
+  const [study, setStudy] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const userId = String(user.id);
+  const fetchStudy = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.study) {
+        setStudy(data.study);
+      }
+    } catch (err) {
+      console.error("Error fetching study:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("studies") || "[]");
-    setStudies(saved);
-  }, []);
+    fetchStudy();
+  }, [id]);
 
-  const study = studies.find((s) => s.id === Number(id));
   const status = study ? STATUS_CONFIG.find((s) => s.key === study.status) : null;
 
   const getReviewerRole = () => {
     if (!study?.assignedReviewers) return null;
     const { reviewer1, reviewer2, plagiarism } = study.assignedReviewers;
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = String(user.id);
+    
     if (String(reviewer1) === userId) return "reviewer1";
     if (String(reviewer2) === userId) return "reviewer2";
     if (String(plagiarism) === userId) return "plagiarism";
@@ -327,63 +343,30 @@ function AssignedStudy() {
 
   const reviewerRole = getReviewerRole();
 
-  const handleSubmitReview = (review) => {
-    const roleLabel = {
-      reviewer1: "Reviewer 1",
-      reviewer2: "Reviewer 2",
-      plagiarism: "Plagiarism Reviewer",
-    }[reviewerRole] || "Reviewer";
-
-    const newReview = {
-      reviewer: roleLabel,
-      status: review.status,
-      feedback: review.feedback,
-      date: new Date().toLocaleDateString(),
-    };
-
-    const updated = studies.map((s) =>
-      s.id === Number(id)
-        ? {
-            ...s,
-            draftFeedback: "",
-            reviews: [...(s.reviews || []), newReview],
-            history: [...(s.history || []), {
-              action: `Review submitted: ${review.status}`,
-              by: roleLabel,
-              date: new Date().toLocaleDateString(),
-            }],
-          }
-        : s
-    );
-
-    localStorage.setItem("studies", JSON.stringify(updated));
-    setStudies(updated);
+  const handleSubmitReview = async (review) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:5000/api/studies/${id}/reviewer-review`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: review.status, remarks: review.feedback })
+      });
+      if (res.ok) {
+        fetchStudy();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Review submission error:", err);
+      return false;
+    }
   };
 
   const handleSaveDraft = (draft) => {
-    const roleLabel = {
-      reviewer1: "Reviewer 1",
-      reviewer2: "Reviewer 2",
-      plagiarism: "Plagiarism Reviewer",
-    }[reviewerRole] || "Reviewer";
-
-    const updated = studies.map((s) =>
-      s.id === Number(id)
-        ? {
-            ...s,
-            status: "Under Review",
-            draftFeedback: draft.feedback,
-            history: [...(s.history || []), {
-              action: "Review draft saved",
-              by: roleLabel,
-              date: new Date().toLocaleDateString(),
-            }],
-          }
-        : s
-    );
-
-    localStorage.setItem("studies", JSON.stringify(updated));
-    setStudies(updated);
+    // Drafts not currently supported by backend, dummy method
   };
 
   return (

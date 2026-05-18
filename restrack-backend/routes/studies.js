@@ -25,7 +25,14 @@ async function getStatusId(statusName) {
 
 function normalizeTrbTargetStatus(statusName) {
   const status = String(statusName || "").trim();
-  if (status === "Forwarded to Reviewers" || status === "Approved" || status === "Pending" || status === "Under Review") {
+  if (
+    status === "Forwarded to Reviewers" ||
+    status === "Approved" ||
+    status === "TRB Approved" ||
+    status === "TRB Approved with Final Paper" ||
+    status === "Pending" ||
+    status === "Under Review"
+  ) {
     return "Forwarded to Reviewers";
   }
   if (status === "For Minor Modification" || status === "For Major Modification") {
@@ -65,6 +72,7 @@ router.get("/my", requireAuth, async (req, res) => {
   const limit = parseLimit(req.query.limit, null);
 
   try {
+    const roleName = normalizeRole(req.user?.role_name || await getUserRole(userId));
     const result = await pool.query(
       `
       SELECT DISTINCT
@@ -89,10 +97,11 @@ router.get("/my", requireAuth, async (req, res) => {
       WHERE rs.created_by = $1
          OR rs.corresponding_author_id = $1
          OR ra.user_id = $1
+         OR $2 = 'Admin'
       ORDER BY rs.updated_at DESC, rs.created_at DESC
-      ${limit ? "LIMIT $2" : ""}
+      ${limit ? "LIMIT $3" : ""}
       `,
-      limit ? [userId, limit] : [userId]
+      limit ? [userId, roleName, limit] : [userId, roleName]
     );
 
     const studies = result.rows.map((row) => ({
@@ -139,7 +148,6 @@ router.post("/", requireAuth, async (req, res) => {
         title,
         abstract_summary,
         department_id,
-        trb_required,
         corresponding_author_id,
         current_status_id,
         date_registered,
@@ -149,7 +157,6 @@ router.post("/", requireAuth, async (req, res) => {
         $2,
         $3,
         (SELECT department_id FROM users WHERE user_id = $4),
-        true,
         $4,
         $5,
         NOW(),
@@ -212,6 +219,7 @@ router.post("/", requireAuth, async (req, res) => {
     res.status(201).json({ studyId: researchId });
   } catch (err) {
     console.error("Study creation error:", err);
+    console.error(err.stack);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -314,25 +322,71 @@ router.get("/assignments", requireAuth, async (req, res) => {
   }
 
   try {
-    const query = `
-      SELECT DISTINCT
-        rs.research_id,
-        rs.hru_reg_no,
-        rs.title,
-        rs.abstract_summary,
-        COALESCE(d.department_name, '') AS department_name,
-        COALESCE(st.status_name, 'Pending') AS status_name,
-        rs.created_at,
-        rs.updated_at,
-        rs.date_registered
-      FROM research_studies rs
-      LEFT JOIN department d ON d.department_id = rs.department_id
-      LEFT JOIN statuses st ON st.status_id = rs.current_status_id
-      WHERE ${roleName === "TRB" ? "COALESCE(st.status_name, 'Pending') IN ('Pending', 'Under Review', 'Forwarded to Reviewers')" : "COALESCE(st.status_name, 'Pending') = 'Forwarded to Reviewers'"}
-      ORDER BY rs.updated_at DESC, rs.created_at DESC
-    `;
+    let query = "";
+    let params = [];
+    if (roleName === "TRB") {
+      query = `
+        SELECT DISTINCT
+          rs.research_id,
+          rs.hru_reg_no,
+          rs.title,
+          rs.abstract_summary,
+          COALESCE(d.department_name, '') AS department_name,
+          COALESCE(st.status_name, 'Pending') AS status_name,
+          rs.created_at,
+          rs.updated_at,
+          rs.date_registered
+        FROM research_studies rs
+        LEFT JOIN department d ON d.department_id = rs.department_id
+        LEFT JOIN statuses st ON st.status_id = rs.current_status_id
+        JOIN (
+          SELECT DISTINCT ON (research_id)
+            research_id,
+            trb_user_id,
+            trb_status
+          FROM trb_reviews
+          WHERE trb_user_id = $1
+          ORDER BY research_id, review_date DESC, trb_review_id DESC
+        ) tr ON tr.research_id = rs.research_id
+        WHERE tr.trb_user_id = $1
+          AND tr.trb_status NOT IN ('TRB Approved', 'TRB Approved with Final Paper', 'Disapproved')
+          AND COALESCE(st.status_name, 'Pending') IN ('Pending', 'Under Review', 'For Revision')
+        ORDER BY rs.updated_at DESC, rs.created_at DESC
+      `;
+      params = [userId];
+    } else {
+      query = `
+        SELECT DISTINCT
+          rs.research_id,
+          rs.hru_reg_no,
+          rs.title,
+          rs.abstract_summary,
+          COALESCE(d.department_name, '') AS department_name,
+          COALESCE(st.status_name, 'Pending') AS status_name,
+          rs.created_at,
+          rs.updated_at,
+          rs.date_registered
+        FROM research_studies rs
+        LEFT JOIN department d ON d.department_id = rs.department_id
+        LEFT JOIN statuses st ON st.status_id = rs.current_status_id
+        JOIN review_assignment ra ON ra.research_id = rs.research_id
+        JOIN LATERAL (
+          SELECT trb_status
+          FROM trb_reviews
+          WHERE research_id = rs.research_id
+          ORDER BY review_date DESC, trb_review_id DESC
+          LIMIT 1
+        ) tr ON TRUE
+        WHERE ra.reviewer_id = $1
+          AND ra.date_completed IS NULL
+          AND COALESCE(st.status_name, 'Pending') IN ('Forwarded to Reviewers', 'Under Review')
+          AND tr.trb_status NOT IN ('Assigned', 'Pending', 'For Revision', 'Disapproved')
+        ORDER BY rs.updated_at DESC, rs.created_at DESC
+      `;
+      params = [userId];
+    }
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, params);
 
     const studies = result.rows.map((row) => ({
       id: row.research_id,
@@ -513,8 +567,25 @@ router.get("/:id", requireAuth, async (req, res) => {
           rs.created_by = $2
           OR rs.corresponding_author_id = $2
           OR ra.user_id = $2
+          OR $3 = 'Admin'
           OR ($3 = 'TRB' AND COALESCE(st.status_name, 'Pending') IN ('Pending', 'Under Review', 'Forwarded to Reviewers'))
-          OR ($3 = 'Reviewer' AND COALESCE(st.status_name, 'Pending') = 'Forwarded to Reviewers')
+          OR ($3 = 'Reviewer' AND COALESCE(st.status_name, 'Pending') IN ('Forwarded to Reviewers', 'Under Review') AND EXISTS (
+            SELECT 1
+            FROM review_assignment ra2
+            WHERE ra2.research_id = rs.research_id
+              AND ra2.reviewer_id = $2
+              AND ra2.date_completed IS NULL
+          ) AND EXISTS (
+            SELECT 1
+            FROM (
+              SELECT trb_status
+              FROM trb_reviews tr2
+              WHERE tr2.research_id = rs.research_id
+              ORDER BY tr2.review_date DESC, tr2.trb_review_id DESC
+              LIMIT 1
+            ) latest_trb
+            WHERE latest_trb.trb_status NOT IN ('Assigned', 'Pending', 'For Revision', 'Disapproved')
+          ))
         )
       LIMIT 1
       `,
@@ -573,6 +644,21 @@ router.get("/:id", requireAuth, async (req, res) => {
       [researchId]
     );
 
+    const trbRes = await pool.query(
+      `SELECT trb_user_id, trb_status
+       FROM trb_reviews
+       WHERE research_id = $1
+       ORDER BY review_date DESC, trb_review_id DESC
+       LIMIT 1`,
+      [researchId]
+    );
+    const revRes = await pool.query(`SELECT reviewer_id, review_deadline FROM review_assignment WHERE research_id = $1 ORDER BY assignment_id ASC`, [researchId]);
+    
+    let deadlineStr = "";
+    if (revRes.rows.length > 0 && revRes.rows[0].review_deadline) {
+      deadlineStr = new Date(revRes.rows[0].review_deadline).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    }
+
     const row = studyRes.rows[0];
     const study = {
       documents: docsRes.rows.map((doc) => ({
@@ -589,7 +675,18 @@ router.get("/:id", requireAuth, async (req, res) => {
       status: row.status_name || "Pending",
       dateCreated: row.created_at,
       dateModified: row.updated_at,
-      dateRegistered: row.date_registered,
+      dateOfRegistration: row.date_registered ? new Date(row.date_registered).toISOString().split('T')[0] : "",
+      hraAlignment: "Not specified",
+      assignedTRB: trbRes.rows[0]?.trb_status === 'Assigned' ? trbRes.rows[0]?.trb_user_id : "",
+      assignedReviewers: {
+        reviewer1: revRes.rows[0]?.reviewer_id || "",
+        reviewer2: revRes.rows[1]?.reviewer_id || "",
+        plagiarism: revRes.rows[2]?.reviewer_id || "",
+      },
+      deadline: deadlineStr,
+      reviews: [], // Would fetch actual reviews
+      history: [], // Would fetch actual history
+      bioinformatics: null,
       submittedBy:
         row.submitted_first_name || row.submitted_last_name
           ? `${row.submitted_first_name ?? ""} ${row.submitted_last_name ?? ""}`.trim()
@@ -605,6 +702,85 @@ router.get("/:id", requireAuth, async (req, res) => {
     res.json({ study });
   } catch (err) {
     console.error("Study fetch error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// PUT /api/studies/:id/admin-update
+router.put("/:id/admin-update", requireAuth, async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: "Invalid token payload" });
+  const roleName = normalizeRole(req.user?.role_name || await getUserRole(userId));
+  if (roleName !== "Admin") return res.status(403).json({ error: "Forbidden" });
+
+  const researchId = Number.parseInt(req.params.id, 10);
+  const { hru, dateOfRegistration, hraAlignment, assignedTRB, assignedReviewers, deadline } = req.body;
+
+  try {
+    if (hru !== undefined || dateOfRegistration !== undefined) {
+      await pool.query(
+        `UPDATE research_studies SET hru_reg_no = COALESCE($1, hru_reg_no), date_registered = COALESCE($2, date_registered) WHERE research_id = $3`,
+        [hru || null, dateOfRegistration || null, researchId]
+      );
+    }
+
+    if (assignedTRB) {
+      const trbCheck = await pool.query(
+        `SELECT trb_status FROM trb_reviews WHERE research_id = $1 ORDER BY review_date DESC, trb_review_id DESC LIMIT 1`,
+        [researchId]
+      );
+      const latestStatus = trbCheck.rows[0]?.trb_status;
+      if (latestStatus !== 'Assigned') {
+        await pool.query(
+          `INSERT INTO trb_reviews (research_id, trb_user_id, trb_status) VALUES ($1, $2, 'Assigned')`,
+          [researchId, assignedTRB]
+        );
+      }
+    }
+
+    if (assignedReviewers) {
+      await pool.query(`DELETE FROM review_assignment WHERE research_id = $1`, [researchId]);
+      const dlDate = deadline ? new Date(deadline) : null;
+      for (const key of ['reviewer1', 'reviewer2', 'plagiarism']) {
+        if (assignedReviewers[key]) {
+          await pool.query(
+            `INSERT INTO review_assignment (research_id, reviewer_id, assigned_by, review_deadline) VALUES ($1, $2, $3, $4)`,
+            [researchId, assignedReviewers[key], userId, dlDate]
+          );
+        }
+      }
+    }
+
+    // Determine target status
+    const studyState = await pool.query(`
+      SELECT
+        rs.current_status_id,
+        COALESCE(st.status_name, 'Pending') as status_name,
+        (SELECT COUNT(*) FROM trb_reviews WHERE research_id = $1 AND trb_status IN ('Assigned', 'Pending')) as pending_trb
+      FROM research_studies rs
+      LEFT JOIN statuses st ON st.status_id = rs.current_status_id
+      WHERE rs.research_id = $1
+    `, [researchId]);
+
+    if (studyState.rows.length > 0) {
+      const { status_name, pending_trb } = studyState.rows[0];
+      let newStatus = status_name;
+      
+      if (assignedTRB && Number(pending_trb) > 0 && status_name === 'Pending') {
+        newStatus = 'Under Review';
+      } else if (assignedReviewers && Number(pending_trb) === 0 && (status_name === 'Pending' || status_name === 'Under Review')) {
+        newStatus = 'Forwarded to Reviewers';
+      }
+      
+      if (newStatus !== status_name) {
+        const statusId = await getStatusId(newStatus);
+        await pool.query(`UPDATE research_studies SET current_status_id = $1 WHERE research_id = $2`, [statusId, researchId]);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Admin update error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

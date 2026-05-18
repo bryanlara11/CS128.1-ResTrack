@@ -91,13 +91,12 @@ async function seed() {
       INSERT INTO research_studies (
         title,
         department_id,
-        trb_required,
         current_status_id,
         corresponding_author_id,
         adviser_id,
         created_by,
         date_registered
-      ) VALUES ($1, $2, true, $3, $4, $5, $6, NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
     `, [s.title, s.dept, s.status, s.author, s.adviser, admin]);
   }
 
