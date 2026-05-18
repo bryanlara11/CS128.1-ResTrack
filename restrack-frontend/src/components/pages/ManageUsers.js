@@ -32,7 +32,10 @@ function ManageUsers() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch("http://localhost:5000/api/users", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Cache-Control": "no-cache"
+        }
       });
       const data = await response.json();
       if (response.ok) {
