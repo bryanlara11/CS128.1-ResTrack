@@ -29,10 +29,14 @@ function ReviewsContent({ study, onSubmitReview, onSaveDraft, reviewerRole }) {
   const showModal = (message) => setModal({ show: true, message });
   const closeModal = () => setModal({ show: false, message: "" });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!reviewComment.trim()) { showModal("Please provide feedback comments."); return; }
-    onSubmitReview({ status: reviewStatus, feedback: reviewComment });
-    setSubmitted(true);
+    const result = await onSubmitReview({ status: reviewStatus, feedback: reviewComment });
+    if (result.success) {
+      setSubmitted(true);
+    } else {
+      showModal(result.message || "Unable to submit review. Please try again.");
+    }
   };
 
   const handleSaveDraft = () => {
@@ -354,14 +358,15 @@ function AssignedStudy() {
         },
         body: JSON.stringify({ status: review.status, remarks: review.feedback })
       });
+      const data = await res.json();
       if (res.ok) {
-        fetchStudy();
-        return true;
+        await fetchStudy();
+        return { success: true };
       }
-      return false;
+      return { success: false, message: data?.error || "Failed to submit review" };
     } catch (err) {
       console.error("Review submission error:", err);
-      return false;
+      return { success: false, message: "Network error while submitting review" };
     }
   };
 

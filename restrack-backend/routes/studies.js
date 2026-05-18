@@ -10,17 +10,37 @@ function parseLimit(value, fallback) {
   return Math.min(n, 100);
 }
 
-async function getStatusId(statusName) {
-  const result = await pool.query(
+async function getStatusId(statusName, client = pool) {
+  const result = await client.query(
     "SELECT status_id FROM statuses WHERE status_name = $1 LIMIT 1",
     [statusName]
   );
   if (result.rows.length > 0) return result.rows[0].status_id;
-  const insertRes = await pool.query(
+  const insertRes = await client.query(
     "INSERT INTO statuses (status_name) VALUES ($1) RETURNING status_id",
     [statusName]
   );
   return insertRes.rows[0].status_id;
+}
+
+async function getReviewFeedbackTextColumn(client = pool) {
+  const result = await client.query(
+    `
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'review_feedback'
+      AND column_name IN ('remarks', 'review')
+    ORDER BY CASE column_name WHEN 'remarks' THEN 1 WHEN 'review' THEN 2 END
+    LIMIT 1
+    `
+  );
+
+  const columnName = result.rows[0]?.column_name;
+  if (!columnName) {
+    throw new Error("review_feedback text column is missing");
+  }
+  return columnName;
 }
 
 function normalizeTrbTargetStatus(statusName) {
@@ -469,8 +489,11 @@ router.post("/:id/reviewer-review", requireAuth, async (req, res) => {
   if (!Number.isFinite(researchId)) return res.status(400).json({ error: "Invalid study id" });
   if (!status || !String(status).trim()) return res.status(400).json({ error: "Status is required" });
 
+  const client = await pool.connect();
   try {
-    const studyResult = await pool.query(
+    await client.query("BEGIN");
+
+    const studyResult = await client.query(
       `
       SELECT rs.research_id, COALESCE(st.status_name, 'Pending') AS status_name
       FROM research_studies rs
@@ -481,17 +504,21 @@ router.post("/:id/reviewer-review", requireAuth, async (req, res) => {
       [researchId]
     );
 
-    if (studyResult.rows.length === 0) return res.status(404).json({ error: "Study not found" });
-    if (studyResult.rows[0].status_name !== "Forwarded to Reviewers") {
+    if (studyResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Study not found" });
+    }
+    if (!["Forwarded to Reviewers", "Under Review"].includes(studyResult.rows[0].status_name)) {
+      await client.query("ROLLBACK");
       return res.status(403).json({ error: "This study is not ready for reviewer feedback" });
     }
 
     const targetStatus = normalizeReviewerTargetStatus(status);
-    const targetStatusId = await getStatusId(targetStatus);
-    const feedbackStatusId = await getStatusId(String(status).trim());
+    const targetStatusId = await getStatusId(targetStatus, client);
+    const feedbackTextColumn = await getReviewFeedbackTextColumn(client);
 
     let assignmentId;
-    const assignmentResult = await pool.query(
+    const assignmentResult = await client.query(
       `
       SELECT assignment_id
       FROM review_assignment
@@ -503,12 +530,12 @@ router.post("/:id/reviewer-review", requireAuth, async (req, res) => {
 
     if (assignmentResult.rows.length > 0) {
       assignmentId = assignmentResult.rows[0].assignment_id;
-      await pool.query(
+      await client.query(
         `UPDATE review_assignment SET assignment_status = 'Completed', date_completed = NOW() WHERE assignment_id = $1`,
         [assignmentId]
       );
     } else {
-      const newAssignment = await pool.query(
+      const newAssignment = await client.query(
         `
         INSERT INTO review_assignment (research_id, reviewer_id, assigned_by, date_assigned, assignment_status)
         VALUES ($1, $2, $3, NOW(), 'Completed')
@@ -519,15 +546,15 @@ router.post("/:id/reviewer-review", requireAuth, async (req, res) => {
       assignmentId = newAssignment.rows[0]?.assignment_id;
     }
 
-    await pool.query(
+    await client.query(
       `
-      INSERT INTO review_feedback (assignment_id, research_id, reviewer_id, feedback_status, remarks)
+      INSERT INTO review_feedback (assignment_id, research_id, reviewer_id, feedback_status, ${feedbackTextColumn})
       VALUES ($1, $2, $3, $4, $5)
       `,
       [assignmentId, researchId, userId, String(status).trim(), remarks || ""]
     );
 
-    await pool.query(
+    await client.query(
       `
       UPDATE research_studies
       SET current_status_id = $1,
@@ -537,10 +564,14 @@ router.post("/:id/reviewer-review", requireAuth, async (req, res) => {
       [targetStatusId, researchId]
     );
 
+    await client.query("COMMIT");
     res.json({ success: true, status: targetStatus });
   } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
     console.error("Reviewer review error:", err);
     res.status(500).json({ error: "Server error" });
+  } finally {
+    client.release();
   }
 });
 
@@ -786,4 +817,3 @@ router.put("/:id/admin-update", requireAuth, async (req, res) => {
 });
 
 module.exports = router;
-
