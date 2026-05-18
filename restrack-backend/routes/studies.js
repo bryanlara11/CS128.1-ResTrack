@@ -10,6 +10,27 @@ function parseLimit(value, fallback) {
   return Math.min(n, 100);
 }
 
+async function createNotification(researchId, userId, message, client = pool) {
+  await client.query(
+    `INSERT INTO notifications (research_id, user_id, message, is_read, date_sent) VALUES ($1, $2, $3, false, NOW())`,
+    [researchId, userId, message]
+  );
+}
+
+async function notifyAdmins(researchId, message, client = pool) {
+  const admins = await client.query(`SELECT user_id FROM users u JOIN roles r ON u.role_id = r.role_id WHERE r.role_name = 'Admin'`);
+  for (const admin of admins.rows) {
+    await createNotification(researchId, admin.user_id, message, client);
+  }
+}
+
+async function notifyResearcher(researchId, message, client = pool) {
+  const study = await client.query(`SELECT created_by FROM research_studies WHERE research_id = $1`, [researchId]);
+  if (study.rows.length > 0) {
+    await createNotification(researchId, study.rows[0].created_by, message, client);
+  }
+}
+
 async function getStatusId(statusName, client = pool) {
   const result = await client.query(
     "SELECT status_id FROM statuses WHERE status_name = $1 LIMIT 1",
@@ -235,6 +256,8 @@ router.post("/", requireAuth, async (req, res) => {
         values
       );
     }
+
+    await notifyAdmins(researchId, `A new study (${title}) has been submitted and is pending review.`);
 
     res.status(201).json({ studyId: researchId });
   } catch (err) {
@@ -469,6 +492,8 @@ router.post("/:id/trb-review", requireAuth, async (req, res) => {
       [researchId, userId, String(status).trim(), remarks || ""]
     );
 
+    await notifyResearcher(researchId, `TRB Chair left feedback on your study. Target Status: ${targetStatus}`);
+
     res.json({ success: true, status: targetStatus });
   } catch (err) {
     console.error("TRB review error:", err);
@@ -563,6 +588,8 @@ router.post("/:id/reviewer-review", requireAuth, async (req, res) => {
       `,
       [targetStatusId, researchId]
     );
+
+    await notifyResearcher(researchId, `A Reviewer left feedback on your study. Target Status: ${targetStatus}`, client);
 
     await client.query("COMMIT");
     res.json({ success: true, status: targetStatus });
@@ -690,6 +717,68 @@ router.get("/:id", requireAuth, async (req, res) => {
       deadlineStr = new Date(revRes.rows[0].review_deadline).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
     }
 
+    let feedbackCol;
+    try {
+      feedbackCol = await getReviewFeedbackTextColumn(pool);
+    } catch {
+      feedbackCol = 'remarks';
+    }
+
+    const trbReviewsRes = await pool.query(`
+      SELECT
+        tr.trb_status as status,
+        tr.remarks as feedback,
+        tr.review_date as date,
+        u.first_name,
+        u.last_name
+      FROM trb_reviews tr
+      JOIN users u ON u.user_id = tr.trb_user_id
+      WHERE tr.research_id = $1 AND tr.trb_status NOT IN ('Assigned', 'Pending')
+    `, [researchId]);
+
+    const revFeedbackRes = await pool.query(`
+      SELECT
+        rf.feedback_status as status,
+        rf.${feedbackCol} as feedback,
+        rf.feedback_date as date,
+        u.first_name,
+        u.last_name
+      FROM review_feedback rf
+      JOIN users u ON u.user_id = rf.reviewer_id
+      WHERE rf.research_id = $1
+    `, [researchId]);
+
+    const formatName = (f, l) => `${f || ''} ${l || ''}`.trim() || 'Unknown';
+    const formatDate = (d) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+    const mapFrontendStatus = (s) => {
+      const lower = String(s || "").toLowerCase();
+      if (lower.includes("approved")) return "Approved";
+      if (lower.includes("disapproved") || lower.includes("rejected")) return "Rejected";
+      if (lower.includes("modification") || lower.includes("revision")) return "For Revision";
+      return "Pending";
+    };
+
+    const reviews = [];
+    for (const r of trbReviewsRes.rows) {
+      reviews.push({
+        reviewer: `${formatName(r.first_name, r.last_name)} (TRB Chair)`,
+        status: mapFrontendStatus(r.status),
+        feedback: r.feedback,
+        date: formatDate(r.date),
+        timestamp: r.date ? new Date(r.date).getTime() : 0
+      });
+    }
+    for (const r of revFeedbackRes.rows) {
+      reviews.push({
+        reviewer: `${formatName(r.first_name, r.last_name)} (Reviewer)`,
+        status: mapFrontendStatus(r.status),
+        feedback: r.feedback,
+        date: formatDate(r.date),
+        timestamp: r.date ? new Date(r.date).getTime() : 0
+      });
+    }
+    reviews.sort((a, b) => b.timestamp - a.timestamp);
+
     const row = studyRes.rows[0];
     const study = {
       documents: docsRes.rows.map((doc) => ({
@@ -715,7 +804,7 @@ router.get("/:id", requireAuth, async (req, res) => {
         plagiarism: revRes.rows[2]?.reviewer_id || "",
       },
       deadline: deadlineStr,
-      reviews: [], // Would fetch actual reviews
+      reviews: reviews,
       history: [], // Would fetch actual history
       bioinformatics: null,
       submittedBy:
@@ -766,6 +855,7 @@ router.put("/:id/admin-update", requireAuth, async (req, res) => {
           `INSERT INTO trb_reviews (research_id, trb_user_id, trb_status) VALUES ($1, $2, 'Assigned')`,
           [researchId, assignedTRB]
         );
+        await createNotification(researchId, assignedTRB, "A new study has been assigned to you for review.");
       }
     }
 
@@ -778,6 +868,7 @@ router.put("/:id/admin-update", requireAuth, async (req, res) => {
             `INSERT INTO review_assignment (research_id, reviewer_id, assigned_by, review_deadline) VALUES ($1, $2, $3, $4)`,
             [researchId, assignedReviewers[key], userId, dlDate]
           );
+          await createNotification(researchId, assignedReviewers[key], "A new study has been assigned to you for review.");
         }
       }
     }
@@ -806,6 +897,7 @@ router.put("/:id/admin-update", requireAuth, async (req, res) => {
       if (newStatus !== status_name) {
         const statusId = await getStatusId(newStatus);
         await pool.query(`UPDATE research_studies SET current_status_id = $1 WHERE research_id = $2`, [statusId, researchId]);
+        await notifyResearcher(researchId, `Your study status has been changed to ${newStatus}.`);
       }
     }
 

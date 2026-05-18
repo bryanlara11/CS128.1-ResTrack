@@ -13,7 +13,7 @@ router.get("/", requireAuth, async (req, res) => {
   }
 
   const limit = Number.parseInt(req.query.limit ?? "10", 10);
-  const unreadOnly = String(req.query.unreadOnly ?? "false").toLowerCase() === "true";
+  const unreadOnly = String(req.query.unreadOnly ?? "true").toLowerCase() === "true";
 
   try {
     const result = await pool.query(
@@ -62,6 +62,23 @@ router.patch("/:id/read", requireAuth, async (req, res) => {
     res.json({ notification: result.rows[0] });
   } catch (err) {
     console.error("Notification mark-read error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// DELETE /api/notifications/clear
+router.delete("/clear", requireAuth, async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: "Invalid token payload" });
+
+  try {
+    await pool.query(
+      `DELETE FROM notifications WHERE user_id = $1`,
+      [userId]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Notifications clear error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../../config";
 import "./Layout.css";
 import restrackLogo from "../../assets/restrack_logo.png";
 
@@ -27,14 +28,54 @@ function Layout() {
     Admin: "Admin",
   }[role] || "User";
 
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: "Your study HRU-2026-001 has been sent for review.", date: "Apr 25, 2026" },
-    { id: 2, message: "Dr. Santos left feedback on your study.", date: "Apr 24, 2026" },
-    { id: 3, message: "Your study has been approved.", date: "Apr 20, 2026" },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
-  const deleteNotif = (id) => {
-    setNotifications(notifications.filter((n) => n.id !== id));
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/notifications?limit=10`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+      }
+    } catch (err) {
+      console.error("Error fetching notifications", err);
+    }
+  };
+
+  const deleteNotif = async (id) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications(notifications.filter((n) => n.notification_id !== id));
+    } catch (err) {
+      console.error("Error marking notification read", err);
+    }
+  };
+
+  const clearAllNotifs = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/notifications/clear`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications([]);
+    } catch (err) {
+      console.error("Error clearing notifications", err);
+    }
   };
 
   const handleLogout = () => {
@@ -110,16 +151,18 @@ function Layout() {
                 <div className="notifHeader">
                   <h4 className="notifTitle">Notifications</h4>
                   {notifications.length > 0 && (
-                    <button className="notifClear" onClick={() => setNotifications([])}>Clear all</button>
+                    <button className="notifClear" onClick={clearAllNotifs}>Clear all</button>
                   )}
                 </div>
                 {notifications.length > 0 ? notifications.map((n) => (
-                  <div key={n.id} className="notifItem">
+                  <div key={n.notification_id} className="notifItem">
                     <div className="notifItemContent">
                       <p className="notifMessage">{n.message}</p>
-                      <span className="notifDate">{n.date}</span>
+                      <span className="notifDate">
+                        {new Date(n.date_sent).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </span>
                     </div>
-                    <button className="notifDelete" onClick={() => deleteNotif(n.id)}>
+                    <button className="notifDelete" onClick={() => deleteNotif(n.notification_id)}>
                       <i className="bi bi-x"></i>
                     </button>
                   </div>
