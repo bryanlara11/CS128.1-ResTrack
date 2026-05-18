@@ -315,7 +315,7 @@ function NewStudy() {
                     ? `Existing: ${existingDocs[0].name}`
                     : "Click to upload research paper"}
                 </span>
-                <small>PDF or DOCX (max 20MB)</small>
+                <small>PDF or DOCX</small>
               </div>
             </label>
             {studyFile && (
