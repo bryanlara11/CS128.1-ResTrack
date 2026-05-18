@@ -40,15 +40,6 @@ function RecentAssignments() {
     fetchRecentAssignments();
   }, []);
 
-  const STATUS_CLASS = {
-    "Approved":               { color: "#10b981", bg: "#d1fae5" },
-    "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
-    "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
-    "For Major Modification":       { color: "#f97316", bg: "#ffedd5" },
-    "Forwarded to Reviewers": { color: "#8b5cf6", bg: "#ede9fe" },
-    "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
-  };
-
   return (
     <div className={styles.box}>
       <div className={styles.header}>
@@ -68,23 +59,11 @@ function RecentAssignments() {
             <div key={study.id} className={styles.card}>
               <div className={styles.topRow}>
                 <h4 className={styles.title}>{study.title}</h4>
-                <span className={styles.eye} onClick={() => navigate(`/assignments/${study.id}`)}>
-                  <i className="bi bi-eye"></i>
-                </span>
               </div>
               <div className={styles.chips}>
                 <span>{study.hru}</span>
                 <span className={styles.dot}>•</span>
                 <span>{study.department}</span>
-              </div>
-              <div
-                className={styles.status}
-                style={{
-                  color: STATUS_CLASS[study.status]?.color,
-                  backgroundColor: STATUS_CLASS[study.status]?.bg,
-                }}
-              >
-                {study.status}
               </div>
               <div className={styles.bottomRow}>
                 <span>Authors: {study.authorList?.length ?? 0}</span>

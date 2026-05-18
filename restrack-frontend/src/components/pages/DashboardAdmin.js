@@ -13,7 +13,7 @@ function DashboardAdmin() {
       </div>
 
       <div className={styles.bottomRow}>
-        <RecentStudies />
+        <RecentStudies showEye={false} showStatus={false} />
       </div>
     </div>
   );

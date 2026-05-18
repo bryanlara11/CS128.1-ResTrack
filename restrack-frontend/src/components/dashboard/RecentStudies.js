@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./RecentStudies.module.css";
 import { useNavigate } from "react-router-dom";
 
-function RecentStudies() {
+function RecentStudies({ showEye = true, showStatus = true }) {
   const navigate = useNavigate();
   const [studies, setStudies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,12 +36,12 @@ function RecentStudies() {
   }, []);
 
   const STATUS_CLASS = {
-  "Approved":               { color: "#10b981", bg: "#d1fae5" },
-  "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
-  "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
-  "For Major Modification":       { color: "#f97316", bg: "#ffedd5" },
-  "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
-};
+    "Approved":               { color: "#10b981", bg: "#d1fae5" },
+    "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
+    "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
+    "For Major Modification": { color: "#f97316", bg: "#ffedd5" },
+    "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
+  };
 
   return (
     <div className={styles.box}>
@@ -62,24 +62,28 @@ function RecentStudies() {
             <div key={study.id} className={styles.card}>
               <div className={styles.topRow}>
                 <h4 className={styles.title}>{study.title}</h4>
-                <span className={styles.eye} onClick={() => navigate(`/studies/${study.id}`)}>
-                  <i className="bi bi-eye"></i>
-                </span>
+                {showEye && (
+                  <span className={styles.eye} onClick={() => navigate(`/studies/${study.id}`)}>
+                    <i className="bi bi-eye"></i>
+                  </span>
+                )}
               </div>
               <div className={styles.chips}>
                 <span>{study.hru}</span>
                 <span className={styles.dot}>•</span>
                 <span>{study.department}</span>
               </div>
-              <div
-                className={styles.status}
-                style={{
-                  color: STATUS_CLASS[study.status]?.color,
-                  backgroundColor: STATUS_CLASS[study.status]?.bg,
-                }}
-              >
-                {study.status}
-              </div>
+              {showStatus && (
+                <div
+                  className={styles.status}
+                  style={{
+                    color: STATUS_CLASS[study.status]?.color,
+                    backgroundColor: STATUS_CLASS[study.status]?.bg,
+                  }}
+                >
+                  {study.status}
+                </div>
+              )}
               <div className={styles.bottomRow}>
                 <span>Authors: {study.authorCount ?? 0}</span>
                 <span>
