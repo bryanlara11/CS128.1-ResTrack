@@ -11,7 +11,12 @@ const usersRoutes = require("./routes/users");
 const app = express();
 
 // Middleware
-app.use(cors({ origin: ["http://localhost:3000", "http://localhost:3001"] }));
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:3000,http://localhost:3001")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 // Routes
@@ -24,6 +29,10 @@ app.use("/api/users", usersRoutes);
 // Health check
 app.get("/", (req, res) => {
   res.json({ message: "ResTrack API is running" });
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({ ok: true });
 });
 
 const PORT = process.env.PORT || 5000;

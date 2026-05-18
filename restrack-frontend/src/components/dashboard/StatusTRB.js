@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styles from "./StatusReviewer.module.css";
+import { API_BASE_URL } from "../../config";
 
 const STATUSES = [
   { key: "Assigned",               label: "Assigned Studies",       color: "#6366f1" },
@@ -48,7 +49,7 @@ function StatusTRB() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:5000/api/dashboard/trb/stats", {
+        const res = await fetch(`${API_BASE_URL}/api/dashboard/trb/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

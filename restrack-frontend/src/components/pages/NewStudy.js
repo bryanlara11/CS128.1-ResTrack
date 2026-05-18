@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./NewStudy.module.css";
 import { useNavigate, useParams } from "react-router-dom";
+import { API_BASE_URL } from "../../config";
 
 function NewStudy() {
   const navigate = useNavigate();
@@ -49,7 +50,7 @@ function NewStudy() {
 
     (async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/users/me", {
+        const res = await fetch(`${API_BASE_URL}/api/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -80,7 +81,7 @@ function NewStudy() {
 
     (async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
+        const res = await fetch(`${API_BASE_URL}/api/studies/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -127,7 +128,7 @@ function NewStudy() {
     debounceRef.current = window.setTimeout(async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/users/search?q=${encodeURIComponent(q.trim())}`,
+          `${API_BASE_URL}/api/users/search?q=${encodeURIComponent(q.trim())}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();
@@ -210,7 +211,7 @@ function NewStudy() {
     }
 
     try {
-      const url = isEditMode ? `http://localhost:5000/api/studies/${id}` : "http://localhost:5000/api/studies";
+      const url = isEditMode ? `${API_BASE_URL}/api/studies/${id}` : `${API_BASE_URL}/api/studies`;
       const method = isEditMode ? "PUT" : "POST";
       const payload = {
         title: title.trim(),

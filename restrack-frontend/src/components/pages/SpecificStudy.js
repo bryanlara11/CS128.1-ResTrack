@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styles from "./SpecificStudy.module.css";
 import { useNavigate, useParams } from "react-router-dom";
+import { API_BASE_URL } from "../../config";
 
 const TABS = ["Overview", "Authors", "Documents", "Reviews", "History", "Bioinformatics"];
 
@@ -243,7 +244,7 @@ function SpecificStudy() {
       try {
         setLoading(true);
         setError("");
-        const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
+        const res = await fetch(`${API_BASE_URL}/api/studies/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();

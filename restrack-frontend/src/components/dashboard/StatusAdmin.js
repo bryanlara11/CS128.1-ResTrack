@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styles from "./StatusAdmin.module.css";
+import { API_BASE_URL } from "../../config";
 
 const STATUSES = [
   { key: "Total Studies",       label: "Total Studies",       color: "#6366f1" },
@@ -49,7 +50,7 @@ function StatusAdmin() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:5000/api/dashboard/admin/stats", {
+        const res = await fetch(`${API_BASE_URL}/api/dashboard/admin/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

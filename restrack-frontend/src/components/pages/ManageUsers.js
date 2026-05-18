@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styles from "./ManageUsers.module.css";
+import { API_BASE_URL } from "../../config";
 
 const ROLES = ["Researcher", "Reviewer", "TRB", "Admin"];
 
@@ -31,11 +32,11 @@ function ManageUsers() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/users", {
-        headers: { 
+      const response = await fetch(`${API_BASE_URL}/api/users`, {
+        headers: {
           Authorization: `Bearer ${token}`,
-          "Cache-Control": "no-cache"
-        }
+          "Cache-Control": "no-cache",
+        },
       });
       const data = await response.json();
       if (response.ok) {
@@ -82,18 +83,18 @@ function ManageUsers() {
     const token = localStorage.getItem("token");
     if (isEditMode) {
       try {
-        const response = await fetch(`http://localhost:5000/api/users/${selectedUser.id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/${selectedUser.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             first_name: form.first_name,
             last_name: form.last_name,
             role_name: form.role_name,
-            department: form.department
-          })
+            department: form.department,
+          }),
         });
 
         if (response.ok) {
@@ -106,7 +107,6 @@ function ManageUsers() {
         setNoticeModal({ show: true, message: "Server error." });
       }
     } else {
-      // For now, new users should sign up through the signup page
       setNoticeModal({ show: true, message: "To add a new user, please use the Signup page." });
     }
 
@@ -120,9 +120,9 @@ function ManageUsers() {
   const confirmDelete = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:5000/api/users/${confirmModal.userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/${confirmModal.userId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import styles from "./Signup.module.css";
 import restrackLogo from "../../assets/restrack_logo.png";
+import { API_BASE_URL } from "../../config";
 
 function Signup() {
   const [firstName, setFirstName] = useState("");
@@ -23,7 +24,7 @@ function Signup() {
       return;
     }
     try {
-      const response = await fetch("http://localhost:5000/api/auth/signup", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ firstName, lastName, email, password }),

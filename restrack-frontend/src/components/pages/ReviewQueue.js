@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./ReviewQueue.module.css";
+import { API_BASE_URL } from "../../config";
 
 const STATUS_CONFIG = [
   { key: "Draft",                  label: "Draft",                  color: "#6b7280" },
@@ -61,7 +62,7 @@ function ReviewQueue() {
     const fetchStudies = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/api/studies/my", {
+        const res = await fetch(`${API_BASE_URL}/api/studies/my`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
