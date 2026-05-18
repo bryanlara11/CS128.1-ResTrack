@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styles from "./ManageUsers.module.css";
+import { API_BASE_URL } from "../../config";
 
 const ROLES = ["Researcher", "Reviewer", "TRB", "Admin"];
 
@@ -31,7 +32,7 @@ function ManageUsers() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/users", {
+      const response = await fetch(`${API_BASE_URL}/api/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -79,7 +80,7 @@ function ManageUsers() {
     const token = localStorage.getItem("token");
     if (isEditMode) {
       try {
-        const response = await fetch(`http://localhost:5000/api/users/${selectedUser.id}`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/${selectedUser.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -117,7 +118,7 @@ function ManageUsers() {
   const confirmDelete = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:5000/api/users/${confirmModal.userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/${confirmModal.userId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styles from "./AssignedStudy.module.css";
 import { useNavigate, useParams } from "react-router-dom";
+import { API_BASE_URL } from "../../config";
 
 const TABS = ["Reviews", "Overview", "Authors", "Documents", "History", "Bioinformatics"];
 
@@ -304,7 +305,7 @@ function AssignedStudyTRB() {
       }
 
       try {
-        const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
+        const res = await fetch(`${API_BASE_URL}/api/studies/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) { setStudy(null); setLoading(false); return; }
@@ -353,7 +354,7 @@ function AssignedStudyTRB() {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/studies/${id}/trb-review`, {
+      const res = await fetch(`${API_BASE_URL}/api/studies/${id}/trb-review`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

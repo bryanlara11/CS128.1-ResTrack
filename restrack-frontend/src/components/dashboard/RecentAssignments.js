@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styles from "./RecentAssignment.module.css";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../../config";
 
 function RecentAssignments() {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ function RecentAssignments() {
       try {
         setLoading(true);
         setError("");
-        const res = await fetch("http://localhost:5000/api/studies/assignments", {
+        const res = await fetch(`${API_BASE_URL}/api/studies/assignments`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();

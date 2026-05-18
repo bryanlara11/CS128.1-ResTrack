@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./Notifications.module.css";
+import { API_BASE_URL } from "../../config";
 
 function Notifications() {
   const [notifications, setNotifications] = useState([
@@ -34,7 +35,7 @@ function Notifications() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/notifications?limit=6", {
+      const res = await fetch(`${API_BASE_URL}/api/notifications?limit=6`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -56,7 +57,7 @@ function Notifications() {
   const markRead = async (notificationId) => {
     if (!token) return;
     try {
-      await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
+      await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -68,7 +69,7 @@ function Notifications() {
   const clearAll = async () => {
   if (!token) return;
   try {
-    await fetch("http://localhost:5000/api/notifications/clear", {
+    await fetch(`${API_BASE_URL}/api/notifications/clear`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });

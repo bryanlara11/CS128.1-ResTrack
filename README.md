@@ -1,5 +1,11 @@
 # CS128.1-ResTrack
 
+ResTrack is split into:
+
+- `restrack-frontend`: Create React App frontend
+- `restrack-backend`: Express API
+- PostgreSQL database
+
 ## Setup (quick)
 
 ### Backend
@@ -13,3 +19,19 @@ cd restrack-backend
 npm install
 npm run dev
 ```
+
+### Frontend
+
+- Copy `restrack-frontend/.env.example` to `restrack-frontend/.env`
+- Set `REACT_APP_API_URL` to the backend URL. For local dev, keep `http://localhost:5000`.
+- Run:
+
+```bash
+cd restrack-frontend
+npm install
+npm start
+```
+
+## Production deployment
+
+See `DEPLOYMENT.md`.

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import styles from "./AssignedStudy.module.css";
 import { useNavigate, useParams } from "react-router-dom";
+import { API_BASE_URL } from "../../config";
 
 const TABS = ["Reviews", "Overview", "Authors", "Documents", "History", "Bioinformatics"];
 
@@ -308,12 +309,11 @@ function AssignedStudy() {
   const [activeTab, setActiveTab] = useState("Overview");
   const { id } = useParams();
   const [study, setStudy] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  const fetchStudy = async () => {
+  const fetchStudy = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/studies/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -322,14 +322,12 @@ function AssignedStudy() {
       }
     } catch (err) {
       console.error("Error fetching study:", err);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchStudy();
-  }, [id]);
+  }, [fetchStudy]);
 
   const status = study ? STATUS_CONFIG.find((s) => s.key === study.status) : null;
 
@@ -350,7 +348,7 @@ function AssignedStudy() {
   const handleSubmitReview = async (review) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/studies/${id}/reviewer-review`, {
+      const res = await fetch(`${API_BASE_URL}/api/studies/${id}/reviewer-review`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

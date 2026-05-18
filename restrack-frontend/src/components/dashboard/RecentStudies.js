@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styles from "./RecentStudies.module.css";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../../config";
 
 function RecentStudies({ showEye = true, showStatus = true }) {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ function RecentStudies({ showEye = true, showStatus = true }) {
       try {
         setLoading(true);
         setError("");
-        const res = await fetch("http://localhost:5000/api/studies/my?limit=3", {
+        const res = await fetch(`${API_BASE_URL}/api/studies/my?limit=3`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();

@@ -1,15 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import styles from "./ReviewQueueStudy.module.css";
 import { useNavigate, useParams } from "react-router-dom";
+import { API_BASE_URL } from "../../config";
 
 const TABS = ["Assignments", "Overview", "Authors", "Documents", "Reviews", "Activities", "Bioinformatics"];
-
-const STATUS_CONFIG = [
-  { key: "Assigned",               label: "Assigned",               color: "#6366f1" },
-  { key: "Pending Review",         label: "Pending Review",         color: "#f59e0b" },
-  { key: "Forwarded to Reviewers", label: "Forwarded to Reviewers", color: "#8b5cf6" },
-  { key: "Completed",              label: "Completed",              color: "#10b981" },
-];
 
 function AssignmentsContent({ study, onAssign, onSaveRegistration }) {
   const [trbUsers, setTrbUsers] = useState([]);
@@ -29,7 +23,7 @@ function AssignmentsContent({ study, onAssign, onSaveRegistration }) {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("http://localhost:5000/api/users", {
+        const response = await fetch(`${API_BASE_URL}/api/users`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
@@ -424,10 +418,10 @@ function ReviewQueueStudy() {
   const { id } = useParams();
   const [study, setStudy] = useState(null);
   
-  const fetchStudy = async () => {
+  const fetchStudy = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/studies/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/studies/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -437,18 +431,16 @@ function ReviewQueueStudy() {
     } catch (err) {
       console.error("Error fetching study:", err);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchStudy();
-  }, [id]);
-
-  const status = study ? STATUS_CONFIG.find((s) => s.key === study.status) : null;
+  }, [fetchStudy]);
 
   const updateBackend = async (payload) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/studies/${id}/admin-update`, {
+      const res = await fetch(`${API_BASE_URL}/api/studies/${id}/admin-update`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

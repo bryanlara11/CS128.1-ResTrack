@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./Assignments.module.css";
+import { API_BASE_URL } from "../../config";
 
 const STATUS_CONFIG = [
   { key: "Assigned",       label: "Assigned Studies", color: "#6366f1" },
@@ -71,7 +72,7 @@ function Assignments() {
       try {
         setLoading(true);
         setError("");
-        const res = await fetch("http://localhost:5000/api/studies/assignments", {
+        const res = await fetch(`${API_BASE_URL}/api/studies/assignments`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();

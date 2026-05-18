@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styles from "./Status.module.css";
+import { API_BASE_URL } from "../../config";
 
 const STATUSES = [
   { key: "Approved",               label: "Approved",               color: "#10b981" },
@@ -35,7 +36,7 @@ function Status() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:5000/api/dashboard/researcher/stats", {
+        const res = await fetch(`${API_BASE_URL}/api/dashboard/researcher/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
