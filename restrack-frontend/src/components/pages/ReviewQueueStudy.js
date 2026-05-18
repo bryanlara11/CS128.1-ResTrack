@@ -349,7 +349,7 @@ function BioinformaticsContent({ study }) {
     <div className={styles.tabSection}>
       <h4 className={styles.tabSectionTitle}>Results</h4>
       <div className={styles.overviewGrid}>
-        {[["Organism Name", bio.results?.organismName],["Study Type", bio.results?.studyType],["Data Type", bio.results?.dataType],["Database Source", bio.results?.databaseSource],["Software Tool", bio.results?.softwareTool],["File Format", bio.results?.fileFormat],["Accession No", bio.results?.accessionNo],["Sequence Type", bio.results?.sequenceType]].map(([label, value]) => (
+        {[["Organism Name", bio.results?.organismName],["Study Type", bio.results?.studyType],["Data Type", bio.results?.dataType],["Database Source", bio.results?.databaseSource],["Software Tool", bio.results?.softwareTool],["Accession No", bio.results?.accessionNo],["Sequence Type", bio.results?.sequenceType]].map(([label, value]) => (
           <div className={styles.overviewField} key={label}>
             <span className={styles.overviewLabel}>{label}</span>
             <p className={styles.overviewValue}>{value || "—"}</p>
@@ -381,7 +381,7 @@ function BioinformaticsContent({ study }) {
       {bio.datasets?.length > 0 ? bio.datasets.map((d, i) => (
         <div key={i} className={styles.bioCard}>
           <div className={styles.overviewGrid}>
-            {[["Dataset Name", d.datasetName],["Data Type", d.dataType],["File Format", d.fileFormat],["File Size", d.fileSize],["Accession No", d.accessionNo],["Upload Date", d.uploadDate]].map(([label, value]) => (
+            {[["Dataset Name", d.datasetName],["Data Type", d.dataType],["Accession No", d.accessionNo]].map(([label, value]) => (
               <div className={styles.overviewField} key={label}>
                 <span className={styles.overviewLabel}>{label}</span>
                 <p className={styles.overviewValue}>{value || "—"}</p>

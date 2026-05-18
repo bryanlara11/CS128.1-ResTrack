@@ -108,9 +108,9 @@ function NewStudy() {
     })();
   }, [id, CURRENT_USER]);
 
-  const [bioResults, setBioResults] = useState({ organismName: "", studyType: "", dataType: "", databaseSource: "", softwareTool: "", fileFormat: "", accessionNo: "", sequenceType: "", notes: "" });
+  const [bioResults, setBioResults] = useState({ organismName: "", studyType: "", dataType: "", databaseSource: "", softwareTool: "", accessionNo: "", sequenceType: "", notes: "" });
   const [bioSamples, setBioSamples] = useState([{ sampleCode: "", sampleType: "", organismName: "", collectionDate: "", collectionSite: "", remarks: "" }]);
-  const [bioDatasets, setBioDatasets] = useState([{ datasetName: "", dataType: "", fileFormat: "", fileSize: "", accessionNo: "", uploadDate: "", isRawData: false, file: null }]);
+  const [bioDatasets, setBioDatasets] = useState([{ datasetName: "", dataType: "", accessionNo: "", uploadDate: "", isRawData: false, file: null }]);
   const [bioTools, setBioTools] = useState([{ toolName: "", toolVersion: "", purpose: "", parameters: "", referenceDatabase: "", dateUsed: "" }]);
 
   const addAuthor = () => setAuthors([...authors, { name: "", email: "", department: "" }]);
@@ -164,7 +164,7 @@ function NewStudy() {
   const deleteSample = (i) => setBioSamples(bioSamples.filter((_, idx) => idx !== i));
   const updateSample = (i, field, value) => { const u = [...bioSamples]; u[i][field] = value; setBioSamples(u); };
 
-  const addDataset = () => setBioDatasets([...bioDatasets, { datasetName: "", dataType: "", fileFormat: "", fileSize: "", accessionNo: "", uploadDate: "", isRawData: false, file: null }]);
+  const addDataset = () => setBioDatasets([...bioDatasets, { datasetName: "", dataType: "", accessionNo: "", uploadDate: "", isRawData: false, file: null }]);
   const deleteDataset = (i) => setBioDatasets(bioDatasets.filter((_, idx) => idx !== i));
   const updateDataset = (i, field, value) => { const u = [...bioDatasets]; u[i][field] = value; setBioDatasets(u); };
 
@@ -214,13 +214,21 @@ function NewStudy() {
       const url = isEditMode ? `${API_BASE_URL}/api/studies/${id}` : `${API_BASE_URL}/api/studies`;
       const method = isEditMode ? "PUT" : "POST";
       const payload = {
-        title: title.trim(),
-        abstract: abstract.trim(),
-        authorIds: authors.map((author) => author.id).filter(Boolean),
-        documents: studyFile
-          ? [{ name: studyFile.name, fileType: studyFile.type || "" }]
-          : [],
-      };
+          title: title.trim(),
+          abstract: abstract.trim(),
+          authorIds: authors.map((author) => author.id).filter(Boolean),
+          documents: studyFile
+            ? [{ name: studyFile.name, fileType: studyFile.type || "" }]
+            : [],
+          bioinformatics: hasBio
+            ? {
+                results: bioResults,
+                samples: bioSamples,
+                datasets: bioDatasets,
+                tools: bioTools,
+              }
+            : null,
+};
 
       const res = await fetch(url, {
         method,
@@ -392,7 +400,7 @@ function NewStudy() {
             <div className={styles.bioFields}>
               <h4 className={styles.bioSectionTitle}>Results</h4>
               <div className={styles.grid}>
-                {[["organismName","Organism Name"],["studyType","Study Type"],["dataType","Data Type"],["databaseSource","Database Source"],["softwareTool","Software Tool Used"],["fileFormat","File Format"],["accessionNo","Accession No"],["sequenceType","Sequence Type"]].map(([field, label]) => (
+                {[["organismName","Organism Name"],["studyType","Study Type"],["dataType","Data Type"],["databaseSource","Database Source"],["softwareTool","Software Tool Used"],["accessionNo","Accession No"],["sequenceType","Sequence Type"]].map(([field, label]) => (
                   <div className={styles.field} key={field}>
                     <label>{label}</label>
                     <input className={styles.input} value={bioResults[field]} onChange={(e) => setBioResults({ ...bioResults, [field]: e.target.value })} />
@@ -429,7 +437,7 @@ function NewStudy() {
                 <div key={i} className={styles.authorCard}>
                   <i className={`bi bi-trash ${styles.trashIcon}`} onClick={() => deleteDataset(i)}></i>
                   <div className={styles.grid}>
-                    {[["datasetName","Dataset Name"],["dataType","Data Type"],["fileFormat","File Format"],["fileSize","File Size"],["accessionNo","Accession No"],["uploadDate","Upload Date"]].map(([field, label]) => (
+                    {[["datasetName","Dataset Name"],["dataType","Data Type"],["accessionNo","Accession No"] ].map(([field, label]) => (
                       <div className={styles.field} key={field}>
                         <label>{label}</label>
                         <input className={styles.input} type={field === "uploadDate" ? "date" : "text"} value={dataset[field]} onChange={(e) => updateDataset(i, field, e.target.value)} />
