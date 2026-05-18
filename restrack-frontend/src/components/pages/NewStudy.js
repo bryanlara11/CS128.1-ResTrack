@@ -473,7 +473,6 @@ function NewStudy() {
                   </div>
                 </div>
               ))}
-              <button className={styles.addAuthor} onClick={addTool}>+ Add Tool</button>
             </div>
           )}
         </div>
