@@ -24,7 +24,6 @@ function ReviewsContent({ study, onSubmitReview, onSaveDraft }) {
   const [reviewStatus, setReviewStatus] = useState("TRB Approved");
   const [reviewComment, setReviewComment] = useState(study.draftFeedback || "");
   const [submitted, setSubmitted] = useState(false);
-  const [draftSaved, setDraftSaved] = useState(false);
   const [modal, setModal] = useState({ show: false, message: "" });
 
   const showModal = (message) => setModal({ show: true, message });
@@ -36,12 +35,6 @@ function ReviewsContent({ study, onSubmitReview, onSaveDraft }) {
     if (success !== false) setSubmitted(true);
   };
 
-  const handleSaveDraft = () => {
-    if (!reviewComment.trim()) { showModal("Please write something before saving a draft."); return; }
-    onSaveDraft({ feedback: reviewComment });
-    setDraftSaved(true);
-    setTimeout(() => setDraftSaved(false), 3000);
-  };
 
   return (
     <div className={styles.tabSection}>
@@ -92,15 +85,7 @@ function ReviewsContent({ study, onSubmitReview, onSaveDraft }) {
               onChange={(e) => setReviewComment(e.target.value)}
             />
           </div>
-          {draftSaved && (
-            <div className={styles.draftSavedMsg}>
-              <i className="bi bi-check-circle"></i> Draft saved.
-            </div>
-          )}
           <div className={styles.reviewFormActions}>
-            <button className={styles.draftBtn} onClick={handleSaveDraft}>
-              Save Draft
-            </button>
             <button className={styles.reviewSubmitBtn} onClick={handleSubmit}>
               Submit Review
             </button>
