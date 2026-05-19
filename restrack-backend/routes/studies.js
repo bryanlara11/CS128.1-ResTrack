@@ -304,6 +304,23 @@ router.put("/:id", requireAuth, async (req, res) => {
       [title.trim(), abstract.trim(), researchId]
     );
 
+    // Reset status to Pending if study is being resubmitted after revision
+    const currentStatus = await pool.query(
+      `SELECT st.status_name FROM research_studies rs 
+       LEFT JOIN statuses st ON st.status_id = rs.current_status_id 
+       WHERE rs.research_id = $1`,
+      [researchId]
+    );
+
+    if (currentStatus.rows[0]?.status_name === "For Revision") {
+      const pendingStatusId = await getStatusId("Pending");
+      await pool.query(
+        `UPDATE research_studies SET current_status_id = $1, updated_at = NOW() WHERE research_id = $2`,
+        [pendingStatusId, researchId]
+      );
+      await notifyAdmins(researchId, `A study has been resubmitted after revision and is pending review.`);
+    }
+
     if (Array.isArray(authorIds)) {
       const parsedAuthorIds = authorIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0);
       const uniqueAuthorIds = [...new Set(parsedAuthorIds)];
