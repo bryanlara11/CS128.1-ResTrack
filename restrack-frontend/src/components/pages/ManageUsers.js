@@ -90,27 +90,58 @@ function ManageUsers() {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            first_name: form.first_name,
-            last_name: form.last_name,
+            first_name: form.first_name.trim(),
+            last_name: form.last_name.trim(),
             role_name: form.role_name,
             department: form.department,
           }),
         });
 
         if (response.ok) {
-          fetchUsers();
+          await fetchUsers();
+          setNoticeModal({ show: true, message: "User updated successfully." });
+          closeModal();
         } else {
-          setNoticeModal({ show: true, message: "Failed to update user." });
+          const data = await response.json().catch(() => ({}));
+          setNoticeModal({ show: true, message: data.error || "Failed to update user." });
         }
       } catch (err) {
         console.error("Error updating user", err);
         setNoticeModal({ show: true, message: "Server error." });
       }
     } else {
-      setNoticeModal({ show: true, message: "To add a new user, please use the Signup page." });
-    }
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/users`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            first_name: form.first_name.trim(),
+            last_name: form.last_name.trim(),
+            email: form.email.trim(),
+            role_name: form.role_name,
+            department: form.department,
+          }),
+        });
 
-    closeModal();
+        const data = await response.json().catch(() => ({}));
+        if (response.ok) {
+          await fetchUsers();
+          setNoticeModal({
+            show: true,
+            message: data.message || "User created successfully.",
+          });
+          closeModal();
+        } else {
+          setNoticeModal({ show: true, message: data.error || "Failed to create user." });
+        }
+      } catch (err) {
+        console.error("Error creating user", err);
+        setNoticeModal({ show: true, message: "Server error." });
+      }
+    }
   };
 
   const handleDelete = (userId) => {

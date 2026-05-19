@@ -37,7 +37,7 @@ function AssignmentCard({ study }) {
         </span>
       </div>
       <div className={styles.cardFooter}>
-        <span className={styles.authors}>Authors: {study.authorList?.length ?? study.authors ?? 0}</span>
+        <span className={styles.authors}>Authors: {study.authorCount ?? study.authorList?.length ?? 0}</span>
         <span className={styles.dateModified}>Date Modified: {study.date}</span>
       </div>
 
