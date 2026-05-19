@@ -6,12 +6,6 @@ import StudyDocumentsList from "../common/StudyDocumentsList";
 
 const TABS = ["Assignments", "Overview", "Authors", "Documents", "Reviews", "Activities", "Bioinformatics"];
 
-const HRU_LETTERS_PATTERN = /[a-zA-Z]/;
-
-function stripLettersFromHru(value) {
-  return String(value || "").replace(/[a-zA-Z]/g, "");
-}
-
 function AssignmentsContent({ study, onAssign, onSaveRegistration }) {
   const [trbUsers, setTrbUsers] = useState([]);
   const [reviewerUsers, setReviewerUsers] = useState([]);
@@ -50,10 +44,6 @@ function AssignmentsContent({ study, onAssign, onSaveRegistration }) {
 
   const handleSaveRegistration = async () => {
     if (!hru.trim()) { setNoticeModal({ show: true, message: "HRU Registration Number is required." }); return; }
-    if (HRU_LETTERS_PATTERN.test(hru)) {
-      setNoticeModal({ show: true, message: "HRU Registration Number must not contain letters." });
-      return;
-    }
     if (!dateOfRegistration.trim()) { setNoticeModal({ show: true, message: "Date of Registration is required." }); return; }
     if (!hraAlignment.trim()) { setNoticeModal({ show: true, message: "HRA Alignment is required." }); return; }
     const saved = await onSaveRegistration({ hru, dateOfRegistration, hraAlignment });
@@ -96,7 +86,7 @@ function AssignmentsContent({ study, onAssign, onSaveRegistration }) {
           <input
             className={styles.assignInput}
             value={hru}
-            onChange={(e) => setHru(stripLettersFromHru(e.target.value))}
+            onChange={(e) => setHru(e.target.value)}
           />
         </div>
         <div className={styles.assignField}>
