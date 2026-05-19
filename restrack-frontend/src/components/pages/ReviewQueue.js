@@ -3,16 +3,25 @@ import { useNavigate } from "react-router-dom";
 import styles from "./ReviewQueue.module.css";
 import { API_BASE_URL } from "../../config";
 
-const STATUS_CONFIG = [
-  { key: "Assigned",               label: "Assigned",               color: "#6366f1", bg: "#e0e7ff" },
-  { key: "Pending Review",         label: "Pending Review",         color: "#f59e0b", bg: "#fef3c7" },
-  { key: "Forwarded to Reviewers", label: "Forwarded to Reviewers", color: "#8b5cf6", bg: "#ede9fe" },
-  { key: "Completed",              label: "Completed",              color: "#10b981", bg: "#d1fae5" },
-];
+const STATUS_CONFIG = {
+  Pending: { color: "#f59e0b", bg: "#fef3c7" },
+  "Under Review": { color: "#3b82f6", bg: "#dbeafe" },
+  "Forwarded to Reviewers": { color: "#8b5cf6", bg: "#ede9fe" },
+  Approved: { color: "#10b981", bg: "#d1fae5" },
+  "For Revision": { color: "#f97316", bg: "#ffedd5" },
+  "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
+  "For Major Modification": { color: "#f97316", bg: "#ffedd5" },
+  Disapproved: { color: "#ef4444", bg: "#fee2e2" },
+  "TRB Approved": { color: "#10b981", bg: "#d1fae5" },
+  "TRB Approved with Final Paper": { color: "#10b981", bg: "#d1fae5" },
+  Completed: { color: "#10b981", bg: "#d1fae5" },
+  Assigned: { color: "#6366f1", bg: "#e0e7ff" },
+  "Pending Review": { color: "#f59e0b", bg: "#fef3c7" },
+};
 
 function StudyCard({ study }) {
   const navigate = useNavigate();
-  const status = STATUS_CONFIG.find((s) => s.key === study.status) || { color: "#6b7280" };
+  const status = STATUS_CONFIG[study.status] || { color: "#6b7280", bg: "#f3f4f6" };
 
   return (
     <div className={styles.studyCard}>
