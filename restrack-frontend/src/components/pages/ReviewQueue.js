@@ -4,11 +4,10 @@ import styles from "./ReviewQueue.module.css";
 import { API_BASE_URL } from "../../config";
 
 const STATUS_CONFIG = [
-  { key: "Draft",                  label: "Draft",                  color: "#6b7280" },
-  { key: "Assigned",               label: "Assigned",               color: "#6366f1" },
-  { key: "Pending Review",         label: "Pending Review",         color: "#f59e0b" },
-  { key: "Forwarded to Reviewers", label: "Forwarded to Reviewers", color: "#8b5cf6" },
-  { key: "Completed",              label: "Completed",              color: "#10b981" },
+  { key: "Assigned",               label: "Assigned",               color: "#6366f1", bg: "#e0e7ff" },
+  { key: "Pending Review",         label: "Pending Review",         color: "#f59e0b", bg: "#fef3c7" },
+  { key: "Forwarded to Reviewers", label: "Forwarded to Reviewers", color: "#8b5cf6", bg: "#ede9fe" },
+  { key: "Completed",              label: "Completed",              color: "#10b981", bg: "#d1fae5" },
 ];
 
 function StudyCard({ study }) {
