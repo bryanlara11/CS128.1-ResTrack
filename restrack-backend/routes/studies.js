@@ -2,6 +2,7 @@ const express = require("express");
 const pool = require("../db");
 const requireAuth = require("../middleware/requireAuth");
 const { saveStudyDocuments, fileExistsAtPath } = require("../utils/documents");
+const { saveBioinformatics, fetchBioinformatics } = require("../utils/bioinformatics");
 
 const router = express.Router();
 
@@ -299,6 +300,10 @@ router.post("/", requireAuth, async (req, res) => {
       );
     }
 
+    if (req.body.bioinformatics) {
+      await saveBioinformatics(researchId, req.body.bioinformatics, pool);
+    }
+
     await notifyAdmins(researchId, `A new study (${title}) has been submitted and is pending review.`);
 
     res.status(201).json({ studyId: researchId });
@@ -313,7 +318,7 @@ router.post("/", requireAuth, async (req, res) => {
 router.put("/:id", requireAuth, async (req, res) => {
   const userId = req.user?.id;
   const researchId = Number.parseInt(req.params.id, 10);
-  const { title, abstract, authorIds, documents } = req.body;
+  const { title, abstract, authorIds, documents, bioinformatics } = req.body;
 
   if (!userId) return res.status(401).json({ error: "Invalid token payload" });
   if (!Number.isFinite(researchId)) return res.status(400).json({ error: "Invalid study id" });
@@ -386,6 +391,10 @@ router.put("/:id", requireAuth, async (req, res) => {
 
     if (Array.isArray(documents) && documents.length > 0) {
       await saveStudyDocuments({ researchId, userId, documents }, pool);
+    }
+
+    if (bioinformatics !== undefined) {
+      await saveBioinformatics(researchId, bioinformatics, pool);
     }
 
     res.json({ studyId: researchId });
@@ -874,7 +883,7 @@ router.get("/:id", requireAuth, async (req, res) => {
       deadline: deadlineStr,
       reviews: reviews,
       history: [], // Would fetch actual history
-      bioinformatics: null,
+      bioinformatics: await fetchBioinformatics(researchId, pool),
       submittedBy:
         row.submitted_first_name || row.submitted_last_name
           ? `${row.submitted_first_name ?? ""} ${row.submitted_last_name ?? ""}`.trim()

@@ -114,6 +114,35 @@ function NewStudy() {
             : [{ ...CURRENT_USER }]
         );
         setExistingDocs(Array.isArray(study.documents) ? study.documents : []);
+        if (study.bioinformatics) {
+          setHasBio(true);
+          setBioResults({
+            organismName: "",
+            studyType: "",
+            dataType: "",
+            databaseSource: "",
+            softwareTool: "",
+            accessionNo: "",
+            sequenceType: "",
+            notes: "",
+            ...(study.bioinformatics.results || {}),
+          });
+          setBioSamples(
+            study.bioinformatics.samples?.length > 0
+              ? study.bioinformatics.samples
+              : [{ sampleCode: "", sampleType: "", organismName: "", collectionDate: "", collectionSite: "", remarks: "" }]
+          );
+          setBioDatasets(
+            study.bioinformatics.datasets?.length > 0
+              ? study.bioinformatics.datasets
+              : [{ datasetName: "", dataType: "", accessionNo: "", uploadDate: "", isRawData: false, file: null }]
+          );
+          setBioTools(
+            study.bioinformatics.tools?.length > 0
+              ? study.bioinformatics.tools
+              : [{ toolName: "", toolVersion: "", purpose: "", parameters: "", referenceDatabase: "", dateUsed: "" }]
+          );
+        }
         setIsEditMode(true);
       } catch (err) {
         console.error("Failed to load study for edit:", err);
