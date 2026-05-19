@@ -84,7 +84,7 @@ function Studies() {
       s.title.toLowerCase().includes(search.toLowerCase()) ||
       s.hru.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "All" || s.status === statusFilter;
-    return matchSearch && matchStatus && matchSection;
+    return matchSearch && matchStatus;
   });
 
   return (
