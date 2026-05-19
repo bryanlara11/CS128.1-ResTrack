@@ -6,7 +6,12 @@ import { API_BASE_URL } from "../../config";
 const TABS = ["Overview", "Authors", "Documents", "Reviews", "History", "Bioinformatics"];
 
 const STATUS_CONFIG = {
-  
+  "Approved":               { color: "#10b981", bg: "#d1fae5" },
+  "Pending":                { color: "#f59e0b", bg: "#fef3c7" },
+  "For Minor Modification": { color: "#3b82f6", bg: "#dbeafe" },
+  "For Major Modification": { color: "#f97316", bg: "#ffedd5" },
+  "Forwarded to Reviewers": { color: "#8b5cf6", bg: "#ede9fe" },
+  "Disapproved":            { color: "#ef4444", bg: "#fee2e2" },
 };
 
 function OverviewContent({ study }) {
@@ -260,6 +265,7 @@ function SpecificStudy() {
   }, [id]);
 
   const status = study ? STATUS_CONFIG[study.status] : null;
+  const needsRevision = study?.status === "For Minor Modification" || study?.status === "For Major Modification";
 
   return (
     <div className={styles.page}>
@@ -273,9 +279,16 @@ function SpecificStudy() {
         <>
           <div className={styles.header}>
             <h1 className={styles.title}>{study.title}</h1>
-            <button className={styles.editButton} onClick={() => navigate(`/studies/${study.id}/edit`)}>
-              <i className="bi bi-pencil"></i> Edit Study
-            </button>
+            <div style={{ display: "flex", gap: "10px" }}>
+              {needsRevision && (
+                <button className={styles.editButton} onClick={() => navigate(`/studies/${study.id}/edit`)}>
+                  <i className="bi bi-arrow-repeat"></i> Resubmit
+                </button>
+              )}
+              <button className={styles.editButton} onClick={() => navigate(`/studies/${study.id}/edit`)}>
+                <i className="bi bi-pencil"></i> Edit Study
+              </button>
+            </div>
           </div>
 
           <div className={styles.chip}>
