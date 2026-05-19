@@ -265,7 +265,9 @@ function SpecificStudy() {
   }, [id]);
 
   const status = study ? STATUS_CONFIG[study.status] : null;
-  const needsRevision = study?.status === "For Minor Modification" || study?.status === "For Major Modification";
+  const needsRevision = study?.status === "For Minor Modification" || 
+                      study?.status === "For Major Modification" ||
+                      study?.status === "For Revision";
 
   return (
     <div className={styles.page}>
