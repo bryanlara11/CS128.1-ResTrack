@@ -13,7 +13,7 @@ function DashboardTRB() {
       </div>
 
       <div className={styles.bottomRow}>
-          <RecentAssignments />
+          <RecentAssignments viewAllPath="/trb-chair/assignments" />
       </div>
 
     </div>

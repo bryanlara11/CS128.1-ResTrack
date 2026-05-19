@@ -3,7 +3,7 @@ import styles from "./RecentAssignment.module.css";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../../config";
 
-function RecentAssignments() {
+function RecentAssignments({ viewAllPath = "/assignments" }) {
   const navigate = useNavigate();
   const [studies, setStudies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +45,7 @@ function RecentAssignments() {
     <div className={styles.box}>
       <div className={styles.header}>
         <h3>Recent Assignments</h3>
-        <button className={styles.viewAll} onClick={() => navigate('/assignments')}>View all assignments</button>
+        <button className={styles.viewAll} onClick={() => navigate(viewAllPath)}>View all assignments</button>
       </div>
 
       <div className={styles.list}>
