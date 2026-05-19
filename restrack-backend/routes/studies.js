@@ -626,7 +626,7 @@ router.get("/:id", requireAuth, async (req, res) => {
           OR rs.corresponding_author_id = $2
           OR ra.user_id = $2
           OR $3 = 'Admin'
-          OR ($3 = 'TRB' AND COALESCE(st.status_name, 'Pending') IN ('Pending', 'Under Review', 'Forwarded to Reviewers'))
+          OR ($3 = 'TRB' AND COALESCE(st.status_name, 'Pending') IN ('Pending', 'Under Review', 'Forwarded to Reviewers', 'For Revision', 'TRB Approved', 'TRB Approved with Final Paper', 'Disapproved', 'Completed'))
           OR ($3 = 'Reviewer' AND COALESCE(st.status_name, 'Pending') IN ('Forwarded to Reviewers', 'Under Review') AND EXISTS (
             SELECT 1
             FROM review_assignment ra2
