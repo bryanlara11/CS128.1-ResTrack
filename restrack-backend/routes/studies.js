@@ -44,6 +44,23 @@ async function getStatusId(statusName, client = pool) {
   return insertRes.rows[0].status_id;
 }
 
+async function getHraAlignmentId(hraName, client = pool) {
+  const normalizedName = String(hraName || "").trim();
+  if (!normalizedName) return null;
+
+  const result = await client.query(
+    `
+    INSERT INTO hra_alignment (hra_name)
+    VALUES ($1)
+    ON CONFLICT (hra_name) DO UPDATE SET hra_name = EXCLUDED.hra_name
+    RETURNING hra_id
+    `,
+    [normalizedName]
+  );
+
+  return result.rows[0]?.hra_id || null;
+}
+
 async function getReviewFeedbackTextColumn(client = pool) {
   const result = await client.query(
     `
@@ -674,12 +691,14 @@ router.get("/:id", requireAuth, async (req, res) => {
         rs.created_at,
         rs.updated_at,
         rs.date_registered,
+        COALESCE(hra.hra_name, '') AS hra_alignment,
         u.first_name AS submitted_first_name,
         u.last_name AS submitted_last_name,
         u.email AS submitted_email
       FROM research_studies rs
       LEFT JOIN department d ON d.department_id = rs.department_id
       LEFT JOIN statuses st ON st.status_id = rs.current_status_id
+      LEFT JOIN hra_alignment hra ON hra.hra_id = rs.hra_id
       LEFT JOIN users u ON u.user_id = rs.created_by
       WHERE rs.research_id = $1
       `,
@@ -807,7 +826,7 @@ router.get("/:id", requireAuth, async (req, res) => {
       dateCreated: row.created_at,
       dateModified: row.updated_at,
       dateOfRegistration: row.date_registered ? new Date(row.date_registered).toISOString().split('T')[0] : "",
-      hraAlignment: "Not specified",
+      hraAlignment: row.hra_alignment || "",
       assignedTRB: trbRes.rows[0]?.trb_status === 'Assigned' ? trbRes.rows[0]?.trb_user_id : "",
       assignedReviewers: {
         reviewer1: revRes.rows[0]?.reviewer_id || "",
@@ -848,10 +867,19 @@ router.put("/:id/admin-update", requireAuth, async (req, res) => {
   const { hru, dateOfRegistration, hraAlignment, assignedTRB, assignedReviewers, deadline } = req.body;
 
   try {
-    if (hru !== undefined || dateOfRegistration !== undefined) {
+    if (hru !== undefined || dateOfRegistration !== undefined || hraAlignment !== undefined) {
+      const hraId = hraAlignment !== undefined ? await getHraAlignmentId(hraAlignment) : undefined;
       await pool.query(
-        `UPDATE research_studies SET hru_reg_no = COALESCE($1, hru_reg_no), date_registered = COALESCE($2, date_registered) WHERE research_id = $3`,
-        [hru || null, dateOfRegistration || null, researchId]
+        `
+        UPDATE research_studies
+        SET
+          hru_reg_no = COALESCE($1, hru_reg_no),
+          date_registered = COALESCE($2, date_registered),
+          hra_id = COALESCE($3, hra_id),
+          updated_at = NOW()
+        WHERE research_id = $4
+        `,
+        [hru || null, dateOfRegistration || null, hraId ?? null, researchId]
       );
     }
 

@@ -86,6 +86,8 @@ ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS corresponding_author_id IN
 ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS adviser_id INTEGER;
 ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS created_by INTEGER;
 ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS date_registered DATE;
+ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS hra_id INTEGER;
+ALTER TABLE research_studies ADD COLUMN IF NOT EXISTS hra_subcat_id INTEGER;
 
 DO $$
 BEGIN
@@ -97,6 +99,16 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'research_studies_status_fk') THEN
         ALTER TABLE research_studies
             ADD CONSTRAINT research_studies_status_fk FOREIGN KEY (current_status_id) REFERENCES statuses(status_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'research_studies_hra_fk') THEN
+        ALTER TABLE research_studies
+            ADD CONSTRAINT research_studies_hra_fk FOREIGN KEY (hra_id) REFERENCES hra_alignment(hra_id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'research_studies_hra_subcat_fk') THEN
+        ALTER TABLE research_studies
+            ADD CONSTRAINT research_studies_hra_subcat_fk FOREIGN KEY (hra_subcat_id) REFERENCES hra_subcategory(hra_subcat_id);
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'research_studies_corresponding_author_fk') THEN

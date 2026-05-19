@@ -41,12 +41,15 @@ function AssignmentsContent({ study, onAssign, onSaveRegistration }) {
     fetchUsers();
   }, []);
 
-  const handleSaveRegistration = () => {
+  const handleSaveRegistration = async () => {
     if (!hru.trim()) { setNoticeModal({ show: true, message: "HRU Registration Number is required." }); return; }
     if (!dateOfRegistration.trim()) { setNoticeModal({ show: true, message: "Date of Registration is required." }); return; }
     if (!hraAlignment.trim()) { setNoticeModal({ show: true, message: "HRA Alignment is required." }); return; }
-    onSaveRegistration({ hru, dateOfRegistration, hraAlignment });
-    setNoticeModal({ show: true, message: "Study registration details saved." });
+    const saved = await onSaveRegistration({ hru, dateOfRegistration, hraAlignment });
+    setNoticeModal({
+      show: true,
+      message: saved ? "Study registration details saved." : "Unable to save study registration details.",
+    });
   };
 
   const handleAssignTRB = () => {
@@ -449,19 +452,22 @@ function ReviewQueueStudy() {
         body: JSON.stringify(payload)
       });
       if (res.ok) {
-        fetchStudy();
+        await fetchStudy();
+        return true;
       }
+      return false;
     } catch (err) {
       console.error("Update error:", err);
+      return false;
     }
   };
 
   const handleAssign = (assignmentData) => {
-    updateBackend(assignmentData);
+    return updateBackend(assignmentData);
   };
 
   const handleSaveRegistration = (registrationData) => {
-    updateBackend(registrationData);
+    return updateBackend(registrationData);
   };
 
   return (
