@@ -13,7 +13,7 @@ function DashboardAdmin() {
       </div>
 
       <div className={styles.bottomRow}>
-        <RecentStudies showEye={false} showStatus={false} />
+        <RecentStudies showEye={false} showStatus={false} viewAllPath="/admin/review-queue" />
       </div>
     </div>
   );

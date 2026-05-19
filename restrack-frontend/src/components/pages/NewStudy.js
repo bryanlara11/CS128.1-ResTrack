@@ -248,35 +248,6 @@ function NewStudy() {
     }
   };
 
-  const handleDraft = () => {
-    if (!title.trim()) {
-      showModal("Please enter a title before saving as draft.");
-      return;
-    }
-
-    const draftStudy = {
-      id: Date.now(),
-      title,
-      abstract,
-      authorList: authors,
-      status: "Draft",
-      hru: `HRU-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`,
-      department: authors[0]?.department || "—",
-      submittedBy: authors[0]?.name || "—",
-      dateCreated: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-      date: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-      bioinformatics: hasBio ? { results: bioResults, samples: bioSamples, datasets: bioDatasets, tools: bioTools } : null,
-      documents: studyFile ? [{ name: studyFile.name, uploadedAt: new Date().toLocaleDateString() }] : [],
-      reviews: [],
-      history: [{ action: "Draft saved", by: authors[0]?.name || "—", date: new Date().toLocaleDateString() }],
-    };
-
-    const existing = JSON.parse(localStorage.getItem("studies") || "[]");
-    localStorage.setItem("studies", JSON.stringify([...existing, draftStudy]));
-
-    navigate("/studies");
-  };
-
   return (
     <div className={styles.page}>
 
@@ -479,7 +450,6 @@ function NewStudy() {
         </div>
 
         <div className={styles.actions}>
-          <button className={styles.draft} onClick={handleDraft}>Save as Draft</button>
           <button className={styles.submit} onClick={handleSubmit}>Submit for Review</button>
         </div>
 

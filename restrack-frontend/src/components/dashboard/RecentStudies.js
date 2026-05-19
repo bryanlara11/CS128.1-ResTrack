@@ -3,7 +3,7 @@ import styles from "./RecentStudies.module.css";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../../config";
 
-function RecentStudies({ showEye = true, showStatus = true }) {
+function RecentStudies({ showEye = true, showStatus = true, viewAllPath = "/studies" }) {
   const navigate = useNavigate();
   const [studies, setStudies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +48,7 @@ function RecentStudies({ showEye = true, showStatus = true }) {
     <div className={styles.box}>
       <div className={styles.header}>
         <h3>Recent Studies</h3>
-        <button className={styles.viewAll} onClick={() => navigate('/studies')}>View all studies</button>
+        <button className={styles.viewAll} onClick={() => navigate(viewAllPath)}>View all studies</button>
       </div>
 
       <div className={styles.list}>

@@ -13,7 +13,7 @@ function DashboardReviewer() {
       </div>
 
       <div className={styles.bottomRow}>
-          <RecentAssignments />
+          <RecentAssignments viewAllPath="/assignments" />
       </div>
 
     </div>

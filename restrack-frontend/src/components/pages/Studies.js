@@ -84,8 +84,7 @@ function Studies() {
       s.title.toLowerCase().includes(search.toLowerCase()) ||
       s.hru.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "All" || s.status === statusFilter;
-    const matchSection = activeSection === "Drafts" ? s.status === "Draft" : s.status !== "Draft";
-    return matchSearch && matchStatus && matchSection;
+    return matchSearch && matchStatus;
   });
 
   return (
@@ -100,12 +99,6 @@ function Studies() {
           onClick={() => setActiveSection("Submitted")}
         >
           Submitted
-        </button>
-        <button
-          className={`${styles.toggleButton} ${activeSection === "Drafts" ? styles.toggleActive : ""}`}
-          onClick={() => setActiveSection("Drafts")}
-        >
-          Drafts
         </button>
       </div>
 
