@@ -492,6 +492,17 @@ router.post("/:id/trb-review", requireAuth, async (req, res) => {
       [researchId, userId, String(status).trim(), remarks || ""]
     );
 
+    if (targetStatus === 'Forwarded to Reviewers') {
+      await pool.query(
+        `
+        UPDATE review_assignment
+        SET assignment_status = 'Pending', date_completed = NULL
+        WHERE research_id = $1
+        `,
+        [researchId]
+      );
+    }
+
     await notifyResearcher(researchId, `TRB Chair left feedback on your study. Target Status: ${targetStatus}`);
 
     res.json({ success: true, status: targetStatus });
