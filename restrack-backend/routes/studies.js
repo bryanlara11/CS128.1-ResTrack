@@ -884,6 +884,10 @@ router.put("/:id/admin-update", requireAuth, async (req, res) => {
   const { hru, dateOfRegistration, hraAlignment, assignedTRB, assignedReviewers, deadline } = req.body;
 
   try {
+    if (hru !== undefined && hru !== null && String(hru).trim() !== "" && /[a-zA-Z]/.test(String(hru))) {
+      return res.status(400).json({ error: "HRU registration number must not contain letters." });
+    }
+
     if (hru !== undefined || dateOfRegistration !== undefined || hraAlignment !== undefined) {
       const hraId = hraAlignment !== undefined ? await getHraAlignmentId(hraAlignment) : undefined;
       await pool.query(

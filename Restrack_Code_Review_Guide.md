@@ -24,7 +24,7 @@ The backend follows a typical Model-View-Controller (MVC-lite) pattern using Exp
 ### 2.2 Routes (`/routes`)
 - `auth.js`: Handles user authentication, login validation, and JWT generation.
 - `users.js`: Handles user management operations (CRUD operations, soft deletes, role updates) restricted to Admin users.
-- `studies.js`: The core business logic for the research pipeline. Handles submitting new studies, updating study statuses, assigning reviewers, processing evaluations, and managing attachments.
+- `studies.js`: The core business logic for the research pipeline. Handles submitting new studies, updating study statuses, assigning reviewers, processing evaluations, and managing attachments. Researcher-facing list/detail/update paths scope data by creator, corresponding author, and `research_authors` (see section 2.5).
 - `dashboard.js`: Aggregates key system statistics and analytics data for the Admin dashboard.
 - `notifications.js`: Handles system notifications and status updates for users.
 
@@ -33,6 +33,29 @@ The backend follows a typical Model-View-Controller (MVC-lite) pattern using Exp
 
 ### 2.4 Database Scripts (`/scripts`, `/migrations`)
 - Includes utility scripts for database seeding (`seed.js`) and altering schema (`alter_db.js`), allowing for easy setup of initial admin users and necessary database tables.
+
+### 2.5 Researcher study visibility (how users only see “their” studies)
+
+Visibility is enforced on the **server**, not by trusting the React UI. Every protected studies call uses `requireAuth`, which decodes the JWT and sets `req.user.id` (and role when present). The database then filters by that user id.
+
+**Listing studies (`GET /api/studies/my` in `routes/studies.js`)**
+
+- The query returns a study only if the current user is linked to it in at least one of these ways: **`research_studies.created_by`**, **`research_studies.corresponding_author_id`**, or a row in **`research_authors`** for that study and user.
+- That means researchers see studies they **created**, act as **corresponding author** for, or are listed as **co-authors** on—not arbitrary submissions from other labs.
+- **Admins** are handled in the same handler: if the resolved role is `Admin`, the `WHERE` clause effectively broadens so they can list all studies (same endpoint, role-aware SQL).
+
+**Opening or editing one study**
+
+- **`GET /api/studies/:id`** runs an access check before returning the payload. For a **Researcher** (and similarly for creator/co-author), access requires the same creator / corresponding author / `research_authors` relationship. If the user has no match, the API responds with **404** (“Study not found”), which avoids leaking whether an id exists to unauthorized users. TRB, Reviewer, and Admin paths add their own role-specific rules (assignments, status, etc.).
+- **`PUT /api/studies/:id`** (researcher updates) uses the same ownership/co-author predicate; there is no “admin bypass” on this route—admins use **`PUT /api/studies/:id/admin-update`** instead.
+
+**Dashboard counts**
+
+- **`GET /api/dashboard/researcher/stats`** (`routes/dashboard.js`) aggregates counts from a CTE that applies the same three-way link (`created_by`, `corresponding_author_id`, or `research_authors`) so dashboard numbers cannot include other users’ studies.
+
+**Frontend alignment**
+
+- Researcher-facing lists (for example `Studies.js` and `RecentStudies.js`) call **`/api/studies/my`** with the Bearer token rather than a generic “all studies” endpoint, so the browser only ever receives rows the backend has already scoped to that user (plus the co-author and corresponding-author cases above).
 
 ---
 
