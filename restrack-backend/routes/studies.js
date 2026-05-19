@@ -1,6 +1,7 @@
 const express = require("express");
 const pool = require("../db");
 const requireAuth = require("../middleware/requireAuth");
+const { saveStudyDocuments, fileExistsAtPath } = require("../utils/documents");
 
 const router = express.Router();
 
@@ -120,6 +121,45 @@ async function getUserRole(userId) {
 
 function normalizeRole(roleName) {
   return String(roleName || "").trim();
+}
+
+async function userHasStudyAccess(researchId, userId, roleName) {
+  const access = await pool.query(
+    `
+    SELECT 1
+    FROM research_studies rs
+    LEFT JOIN research_authors ra ON ra.research_id = rs.research_id AND ra.user_id = $2
+    LEFT JOIN statuses st ON st.status_id = rs.current_status_id
+    WHERE rs.research_id = $1
+      AND (
+        rs.created_by = $2
+        OR rs.corresponding_author_id = $2
+        OR ra.user_id = $2
+        OR $3 = 'Admin'
+        OR ($3 = 'TRB' AND COALESCE(st.status_name, 'Pending') IN ('Pending', 'Under Review', 'Forwarded to Reviewers', 'For Revision', 'TRB Approved', 'TRB Approved with Final Paper', 'Disapproved', 'Completed'))
+        OR ($3 = 'Reviewer' AND COALESCE(st.status_name, 'Pending') IN ('Forwarded to Reviewers', 'Under Review') AND EXISTS (
+          SELECT 1
+          FROM review_assignment ra2
+          WHERE ra2.research_id = rs.research_id
+            AND ra2.reviewer_id = $2
+            AND ra2.date_completed IS NULL
+        ) AND EXISTS (
+          SELECT 1
+          FROM (
+            SELECT trb_status
+            FROM trb_reviews tr2
+            WHERE tr2.research_id = rs.research_id
+            ORDER BY tr2.review_date DESC, tr2.trb_review_id DESC
+            LIMIT 1
+          ) latest_trb
+          WHERE latest_trb.trb_status NOT IN ('Assigned', 'Pending', 'For Revision', 'Disapproved')
+        ))
+      )
+    LIMIT 1
+    `,
+    [researchId, userId, roleName]
+  );
+  return access.rows.length > 0;
 }
 
 // GET /api/studies/my?limit=3
@@ -252,25 +292,10 @@ router.post("/", requireAuth, async (req, res) => {
       );
     }
 
-    const documentMeta = Array.isArray(req.body.documents)
-      ? req.body.documents.map((doc) => ({
-          name: String(doc.name || "").trim(),
-          type: String(doc.fileType || "").trim(),
-        })).filter((doc) => doc.name)
-      : [];
-
-    if (documentMeta.length > 0) {
-      const values = [];
-      const placeholders = documentMeta.map((doc, idx) => {
-        const base = idx * 5;
-        const sanitizedPath = `uploaded/${Date.now()}_${doc.name.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
-        values.push(researchId, userId, doc.name, doc.type, sanitizedPath);
-        return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
-      });
-
-      await pool.query(
-        `INSERT INTO research_documents (research_id, uploaded_by, file_name, file_type, file_path) VALUES ${placeholders.join(", ")}`,
-        values
+    if (Array.isArray(req.body.documents) && req.body.documents.length > 0) {
+      await saveStudyDocuments(
+        { researchId, userId, documents: req.body.documents },
+        pool
       );
     }
 
@@ -359,26 +384,8 @@ router.put("/:id", requireAuth, async (req, res) => {
       }
     }
 
-    const documentMeta = Array.isArray(documents)
-      ? documents.map((doc) => ({
-          name: String(doc.name || "").trim(),
-          type: String(doc.fileType || "").trim(),
-        })).filter((doc) => doc.name)
-      : [];
-
-    if (documentMeta.length > 0) {
-      const values = [];
-      const placeholders = documentMeta.map((doc, idx) => {
-        const base = idx * 5;
-        const sanitizedPath = `uploaded/${Date.now()}_${doc.name.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
-        values.push(researchId, userId, doc.name, doc.type, sanitizedPath);
-        return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
-      });
-
-      await pool.query(
-        `INSERT INTO research_documents (research_id, uploaded_by, file_name, file_type, file_path) VALUES ${placeholders.join(", ")}`,
-        values
-      );
+    if (Array.isArray(documents) && documents.length > 0) {
+      await saveStudyDocuments({ researchId, userId, documents }, pool);
     }
 
     res.json({ studyId: researchId });
@@ -647,6 +654,54 @@ router.post("/:id/reviewer-review", requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/studies/:id/documents/:fileId/download
+router.get("/:id/documents/:fileId/download", requireAuth, async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: "Invalid token payload" });
+
+  const researchId = Number.parseInt(req.params.id, 10);
+  const fileId = Number.parseInt(req.params.fileId, 10);
+  if (!Number.isFinite(researchId) || !Number.isFinite(fileId)) {
+    return res.status(400).json({ error: "Invalid study or document id" });
+  }
+
+  try {
+    const roleName = normalizeRole(req.user?.role_name || (await getUserRole(userId)));
+    const hasAccess = await userHasStudyAccess(researchId, userId, roleName);
+    if (!hasAccess) return res.status(404).json({ error: "Document not found" });
+
+    const docResult = await pool.query(
+      `
+      SELECT file_id, file_name, file_type, file_path
+      FROM research_documents
+      WHERE file_id = $1 AND research_id = $2
+      LIMIT 1
+      `,
+      [fileId, researchId]
+    );
+
+    if (docResult.rows.length === 0) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    const doc = docResult.rows[0];
+    const absolutePath = fileExistsAtPath(doc.file_path);
+    if (!absolutePath) {
+      return res.status(404).json({ error: "File is not available for download." });
+    }
+
+    res.download(absolutePath, doc.file_name, (err) => {
+      if (err && !res.headersSent) {
+        console.error("Document download error:", err);
+        res.status(500).json({ error: "Server error" });
+      }
+    });
+  } catch (err) {
+    console.error("Document download error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // GET /api/studies/:id
 router.get("/:id", requireAuth, async (req, res) => {
   const userId = req.user?.id;
@@ -658,43 +713,8 @@ router.get("/:id", requireAuth, async (req, res) => {
   if (!Number.isFinite(researchId)) return res.status(400).json({ error: "Invalid study id" });
 
   try {
-    // Ensure user has access to this study (same rules as list plus TRB/reviewer workflow access)
-    const access = await pool.query(
-      `
-      SELECT 1
-      FROM research_studies rs
-      LEFT JOIN research_authors ra ON ra.research_id = rs.research_id AND ra.user_id = $2
-      LEFT JOIN statuses st ON st.status_id = rs.current_status_id
-      WHERE rs.research_id = $1
-        AND (
-          rs.created_by = $2
-          OR rs.corresponding_author_id = $2
-          OR ra.user_id = $2
-          OR $3 = 'Admin'
-          OR ($3 = 'TRB' AND COALESCE(st.status_name, 'Pending') IN ('Pending', 'Under Review', 'Forwarded to Reviewers', 'For Revision', 'TRB Approved', 'TRB Approved with Final Paper', 'Disapproved', 'Completed'))
-          OR ($3 = 'Reviewer' AND COALESCE(st.status_name, 'Pending') IN ('Forwarded to Reviewers', 'Under Review') AND EXISTS (
-            SELECT 1
-            FROM review_assignment ra2
-            WHERE ra2.research_id = rs.research_id
-              AND ra2.reviewer_id = $2
-              AND ra2.date_completed IS NULL
-          ) AND EXISTS (
-            SELECT 1
-            FROM (
-              SELECT trb_status
-              FROM trb_reviews tr2
-              WHERE tr2.research_id = rs.research_id
-              ORDER BY tr2.review_date DESC, tr2.trb_review_id DESC
-              LIMIT 1
-            ) latest_trb
-            WHERE latest_trb.trb_status NOT IN ('Assigned', 'Pending', 'For Revision', 'Disapproved')
-          ))
-        )
-      LIMIT 1
-      `,
-      [researchId, userId, roleName]
-    );
-    if (access.rows.length === 0) return res.status(404).json({ error: "Study not found" });
+    const hasAccess = await userHasStudyAccess(researchId, userId, roleName);
+    if (!hasAccess) return res.status(404).json({ error: "Study not found" });
 
     const studyRes = await pool.query(
       `
@@ -741,7 +761,7 @@ router.get("/:id", requireAuth, async (req, res) => {
 
     const docsRes = await pool.query(
       `
-      SELECT file_name, upload_date, file_type, file_path
+      SELECT file_id, file_name, upload_date, file_type, file_path
       FROM research_documents
       WHERE research_id = $1
       ORDER BY file_id ASC
@@ -829,6 +849,7 @@ router.get("/:id", requireAuth, async (req, res) => {
     const row = studyRes.rows[0];
     const study = {
       documents: docsRes.rows.map((doc) => ({
+        id: doc.file_id,
         name: doc.file_name || "",
         uploadedAt: doc.upload_date ? new Date(doc.upload_date).toLocaleDateString() : "",
         fileType: doc.file_type || "",

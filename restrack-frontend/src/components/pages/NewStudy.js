@@ -3,6 +3,19 @@ import styles from "./NewStudy.module.css";
 import { useNavigate, useParams } from "react-router-dom";
 import { API_BASE_URL } from "../../config";
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      const base64 = result.includes(",") ? result.split(",")[1] : result;
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function NewStudy() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -213,13 +226,20 @@ function NewStudy() {
     try {
       const url = isEditMode ? `${API_BASE_URL}/api/studies/${id}` : `${API_BASE_URL}/api/studies`;
       const method = isEditMode ? "PUT" : "POST";
+      const documentPayload = studyFile
+        ? [
+            {
+              name: studyFile.name,
+              fileType: studyFile.type || "",
+              content: await fileToBase64(studyFile),
+            },
+          ]
+        : [];
       const payload = {
           title: title.trim(),
           abstract: abstract.trim(),
           authorIds: authors.map((author) => author.id).filter(Boolean),
-          documents: studyFile
-            ? [{ name: studyFile.name, fileType: studyFile.type || "" }]
-            : [],
+          documents: documentPayload,
           bioinformatics: hasBio
             ? {
                 results: bioResults,

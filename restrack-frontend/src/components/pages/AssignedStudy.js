@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import styles from "./AssignedStudy.module.css";
 import { useNavigate, useParams } from "react-router-dom";
 import { API_BASE_URL } from "../../config";
+import StudyDocumentsList from "../common/StudyDocumentsList";
 
 const TABS = ["Reviews", "Overview", "Authors", "Documents", "History", "Bioinformatics"];
 
@@ -198,17 +199,7 @@ function DocumentsContent({ study }) {
   return (
     <div className={styles.tabSection}>
       <h4 className={styles.tabSectionTitle}>Documents</h4>
-      <div className={styles.docList}>
-        {study.documents?.length > 0 ? study.documents.map((doc, i) => (
-          <div key={i} className={styles.docItem}>
-            <i className="bi bi-file-earmark-text"></i>
-            <div className={styles.docInfo}>
-              <span className={styles.docName}>{doc.name}</span>
-              <span className={styles.docMeta}>Uploaded: {doc.uploadedAt}</span>
-            </div>
-          </div>
-        )) : <p className={styles.empty}>No documents uploaded.</p>}
-      </div>
+      <StudyDocumentsList studyId={study.id} documents={study.documents} />
     </div>
   );
 }

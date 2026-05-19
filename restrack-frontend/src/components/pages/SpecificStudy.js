@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./SpecificStudy.module.css";
 import { useNavigate, useParams } from "react-router-dom";
 import { API_BASE_URL } from "../../config";
+import StudyDocumentsList from "../common/StudyDocumentsList";
 
 const TABS = ["Overview", "Authors", "Documents", "Reviews", "History", "Bioinformatics"];
 
@@ -85,17 +86,7 @@ function DocumentsContent({ study }) {
           <input type="file" hidden onChange={handleUpload} />
         </label>
       </div>
-      <div className={styles.docList}>
-        {docs.length > 0 ? docs.map((doc, i) => (
-          <div key={i} className={styles.docItem}>
-            <i className="bi bi-file-earmark-text"></i>
-            <div className={styles.docInfo}>
-              <span className={styles.docName}>{doc.name}</span>
-              <span className={styles.docMeta}>Uploaded: {doc.uploadedAt}</span>
-            </div>
-          </div>
-        )) : <p className={styles.empty}>No documents uploaded.</p>}
-      </div>
+      <StudyDocumentsList studyId={study.id} documents={docs} />
     </div>
   );
 }
